@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lira Navideña CJDV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+body{margin:0}
+
+/* Layout: aula proyectada — encabezado con canciones, lira grande al centro, frase actual en grande, partitura completa debajo */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --ink:#17202b; --muted:#5a6779; --line:#d4dbe4;
+  --frame:#1f2e47; --frame-edge:#13203a; --bar-hi:#f4f7fa; --bar-lo:#a9b4c1; --bar-ink:#1d2733;
+  --chroma-hi:#3b4658; --chroma-lo:#1c2431; --chroma-ink:#e9eef4;
+  --glow:#f3b229; --glow2:#14b8a6; --tip:#1d232b; --rivet:#6f7a87; --steel-hi:#f2f5f8; --steel-lo:#8b96a3; --accent:#c4352a; --accent-ink:#ffffff; --soft:#e4e9f0;
+  --c-do:#e03a3a; --c-re:#ee8a1f; --c-mi:#e8bd12; --c-fa:#3fa548; --c-sol:#2a95dc; --c-la:#6656c8; --c-si:#c24bba; --c-alt:#6d7787;
+  --f-display:"Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e131a; --surface:#171f2a; --ink:#e8edf3; --muted:#97a4b5; --line:#2a3546;
+  --frame:#0a1019; --frame-edge:#2a3a55; --bar-hi:#dfe5ec; --bar-lo:#8995a4; --bar-ink:#141b24;
+  --chroma-hi:#46536a; --chroma-lo:#222c3b; --chroma-ink:#e9eef4;
+  --glow:#ffc94a; --glow2:#2dd4bf; --tip:#05080c; --rivet:#5d6876; --steel-hi:#d9dfe6; --steel-lo:#5f6a78; --accent:#e2574b; --accent-ink:#ffffff; --soft:#1f2936; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e131a; --surface:#171f2a; --ink:#e8edf3; --muted:#97a4b5; --line:#2a3546;
+  --frame:#0a1019; --frame-edge:#2a3a55; --bar-hi:#dfe5ec; --bar-lo:#8995a4; --bar-ink:#141b24;
+  --chroma-hi:#46536a; --chroma-lo:#222c3b; --chroma-ink:#e9eef4;
+  --glow:#ffc94a; --glow2:#2dd4bf; --tip:#05080c; --rivet:#5d6876; --steel-hi:#d9dfe6; --steel-lo:#5f6a78; --accent:#e2574b; --accent-ink:#ffffff; --soft:#1f2936; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:20px 48px;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(1.7rem,4vw,2.4rem);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.sub{margin:4px 0 0;color:var(--muted);font-size:.95rem}
+.tabs{display:flex;gap:6px;background:var(--soft);padding:5px;border-radius:999px;flex-wrap:wrap}
+.tab{font:700 .95rem var(--f-body);border:0;background:transparent;color:var(--muted);padding:8px 16px;border-radius:999px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgb(0 0 0/.12)}
+.tab:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,.bar:focus-visible,.row:focus-visible{outline:3px solid var(--glow);outline-offset:2px}
+
+/* Lira vertical (como la lira de banda): naturales plateadas a la derecha, cromáticas negras a la izquierda, agudo arriba */
+.main{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:20px 32px;align-items:start}
+.side{display:grid;gap:16px;min-width:0;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.stage{min-width:0}
+#lira{display:block;width:100%;height:auto;max-height:min(80vh,760px);margin-inline:auto}
+#lira .rail{fill:none;stroke:url(#steel);stroke-width:9;stroke-linecap:round;stroke-linejoin:round}
+#lira .post{stroke:var(--steel-lo);stroke-width:7;stroke-linecap:round}
+#lira .tip{fill:var(--tip)}
+.bar{cursor:pointer;outline:none}
+.bar .body{transition:filter .15s}
+.bar.nat .body{fill:url(#silver);stroke:var(--bar-lo);stroke-width:1}
+.bar.chroma .body{fill:url(#black);stroke:var(--chroma-lo);stroke-width:1}
+.bar .rivet{fill:var(--rivet)}
+.bar .hl{fill:var(--glow);opacity:0;transition:opacity .12s}
+.bar .ring{fill:none;stroke:var(--glow);stroke-width:3.5;opacity:0}
+.bar .dot{stroke:rgb(0 0 0/.25);stroke-width:1}
+.bar text{font-family:var(--f-body);font-weight:700;font-size:14px;pointer-events:none}
+.bar.nat text{fill:var(--bar-ink)}
+.bar.chroma text{fill:var(--chroma-ink);font-size:12.5px}
+.bar text .oc{font-size:9px;font-weight:400;letter-spacing:.06em}
+.bar.next .ring{opacity:1}
+.bar.on .hl{opacity:.92}
+.bar.on .body{filter:drop-shadow(0 0 9px var(--glow))}
+.bar.on text{fill:#1a1300}
+.bar:focus-visible .ring{opacity:1;stroke:var(--accent)}
+.bar:not(.used){opacity:.45}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:.85rem;margin-top:10px}
+.legend b{color:var(--ink)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+
+/* Ahora */
+.now{display:grid;grid-template-columns:1fr;gap:16px 24px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.big{display:flex;gap:18px;align-items:end}
+.big .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block}
+.big .cur{font-family:var(--f-display);font-weight:800;font-size:clamp(2.6rem,7vw,4rem);line-height:1;min-width:3.2ch}
+.big .nxt{font-family:var(--f-display);font-weight:600;font-size:1.6rem;line-height:1;color:var(--muted);min-width:3ch}
+.phrase{min-width:0}
+.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-weight:700}
+.lyric{font-family:var(--f-display);font-weight:600;font-size:clamp(1.2rem,2.6vw,1.6rem);line-height:1.2;margin:2px 0 10px;text-wrap:balance}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:700 .95rem var(--f-body);padding:4px 10px;border-radius:8px;background:var(--soft);color:var(--ink);border-bottom:4px solid var(--nc,var(--c-alt));transition:background .1s}
+.chip.past{opacity:.45}
+.chip.on{background:var(--glow);color:#1a1300}
+
+/* Controles */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
+.btn{font:700 1rem var(--f-body);border:0;border-radius:12px;padding:12px 22px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.play{background:var(--accent);color:var(--accent-ink);min-width:150px;justify-content:center}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.tempo{display:flex;align-items:center;gap:10px;font-size:.95rem}
+.tempo input{width:150px;accent-color:var(--accent)}
+.tempo output{font-variant-numeric:tabular-nums;font-weight:700;min-width:3.5ch}
+.checks{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.92rem;color:var(--muted)}
+.checks label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.checks input{accent-color:var(--accent);width:17px;height:17px}
+
+/* Partitura */
+.score{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;gap:14px}
+.score h2{font-family:var(--f-display);font-weight:800;font-size:1.2rem;margin:0}
+.score .hint{color:var(--muted);font-size:.88rem;margin:-8px 0 0}
+.block h3{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin:0 0 4px}
+.row{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);gap:4px 16px;padding:7px 10px;border-radius:10px;cursor:pointer;align-items:baseline}
+.row:hover{background:var(--soft)}
+.row.cur{background:color-mix(in srgb,var(--glow) 28%,transparent)}
+.row .ly{font-weight:700}
+.row .ns{font-family:var(--f-mono);font-size:.88rem;color:var(--muted);overflow-wrap:anywhere}
+.row .ns i{font-style:normal;display:inline-block;margin-right:.55em}
+.row .ns i::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--nc,var(--c-alt));margin-right:3px;vertical-align:1px}
+.status{font-size:.9rem;color:var(--muted);min-height:1.5em}
+@media (max-width:820px){
+  .main{grid-template-columns:1fr}
+  .side{position:static}
+}
+@media (max-width:640px){
+  .row{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){.bar .hl,.chip{transition:none}}
+
+.tab .tnum{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:.8rem;margin-right:8px;vertical-align:1px}
+.keybox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.95rem}
+.klbl{color:var(--ink)}
+.kbtn{font:700 1.1rem var(--f-body);width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.kbtn:disabled{opacity:.35;cursor:not-allowed}
+.kname{font-weight:700;min-width:7ch}
+.kreset{font:700 .85rem var(--f-body);border:0;background:none;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:4px}
+.block h3 .meta{color:var(--muted);font-weight:400;letter-spacing:.04em;text-transform:none;font-size:.82rem;margin-left:6px}
+.kfixed{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.perc{border:1px solid var(--line);border-radius:12px;padding:10px 14px 12px;margin:0;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.92rem;color:var(--muted);background:var(--surface)}
+.perc legend{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-weight:700;padding:0 6px}
+.perc label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--ink)}
+.perc input{accent-color:var(--accent);width:17px;height:17px}
+.perc .phint{flex-basis:100%;margin:2px 0 0;font-size:.82rem}
+.perc .stylepick{flex-basis:100%;font-weight:700}
+.perc select{font:600 .95rem var(--f-body);padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.arrtag{margin-top:12px;display:inline-block;font:700 .9rem var(--f-body);padding:6px 12px;border-radius:999px;background:var(--soft);color:var(--ink);border-left:5px solid var(--muted)}
+.arrtag[data-k="hit"],.arrtag[data-k="end"]{background:var(--accent);color:var(--accent-ink);border-left-color:var(--accent)}
+.arrtag[data-k="rest"],.arrtag[data-k="pulse"]{background:color-mix(in srgb,var(--glow) 30%,transparent);border-left-color:var(--glow)}
+.arrtag[data-k="fill"],.arrtag[data-k="stoptime"]{border-left-color:var(--accent)}
+.arrtag[data-k="thin"]{border-left-color:var(--c-sol)}
+.arrtag[data-k="full"]{border-left-color:var(--c-fa)}
+.perc .stylepick input{accent-color:var(--accent);width:17px;height:17px}
+.bar .hl2{fill:var(--glow2);opacity:0;transition:opacity .12s}
+.bar.on2 .hl2{opacity:.85}
+.bar.on2 .body{filter:drop-shadow(0 0 8px var(--glow2))}
+.bar.on.on2 .hl{opacity:.6}
+.v2box .v2n{font-family:var(--f-display);font-weight:800;font-size:1.9rem;line-height:1;color:var(--glow2);min-width:3ch;display:block}
+.row .ns .vl{font-family:var(--f-body);font-size:.72rem;color:var(--glow);margin-right:6px;letter-spacing:.06em}
+.row .ns .vl.v2{color:var(--glow2)}
+.checks select{font:600 .9rem var(--f-body);padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-left:4px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Lira Navideña · Banda CJDV 2026</h1>
+      <p class="sub" id="sub">Lira de banda · 26 láminas</p>
+    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+  </header>
+
+  <div class="main">
+  <div class="stage">
+    <svg id="lira" viewBox="0 0 440 640" role="group" aria-label="Lira de banda de 26 láminas, de Sol grave a La agudo">
+      <defs>
+        <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--bar-hi)"/><stop offset=".55" style="stop-color:var(--bar-hi)"/><stop offset="1" style="stop-color:var(--bar-lo)"/></linearGradient>
+        <linearGradient id="black" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--chroma-hi)"/><stop offset="1" style="stop-color:var(--chroma-lo)"/></linearGradient>
+        <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--steel-lo)"/><stop offset=".5" style="stop-color:var(--steel-hi)"/><stop offset="1" style="stop-color:var(--steel-lo)"/></linearGradient>
+      </defs>
+      <g id="frame"></g>
+      <g id="bars"></g>
+    </svg>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--glow)"></span><b>Lámina encendida (dorado):</b> se toca ahora · Lira 1</span>
+      <span><span class="sw" style="background:var(--glow2)"></span><b>Turquesa:</b> se toca ahora · Lira 2 (piezas a dos voces)</span>
+      <span>Las láminas opacas no se usan en esta pieza. Toque cualquier lámina para escucharla.</span>
+    </div>
+  </div>
+
+  <div class="side">
+  <section class="now" aria-live="polite">
+    <div class="big">
+      <div><span class="lbl">Ahora</span><span class="cur" id="curNote">–</span></div>
+      <div><span class="lbl">Sigue</span><span class="nxt" id="nxtNote">–</span></div>
+      <div class="v2box" id="v2Box" hidden><span class="lbl">Lira 2</span><span class="v2n" id="v2Note">–</span></div>
+    </div>
+    <div class="phrase">
+      <div class="sec" id="secName">Listo para empezar</div>
+      <div class="lyric" id="lyric">Presione Reproducir</div>
+      <div class="chips" id="chips"></div>
+      <div class="arrtag" id="arrTag" hidden></div>
+    </div>
+  </section>
+
+  <div class="controls">
+    <button class="btn play" id="play">▶ Reproducir</button>
+    <button class="btn ghost" id="restart">↺ Desde el inicio</button>
+    <label class="tempo" for="tempo">Tempo <input type="range" id="tempo" min="50" max="170" step="2" value="120"><output id="tempoOut">120</output> ♩/min</label>
+    <div class="keybox" role="group" aria-label="Tonalidad">
+      <span class="klbl">Tono</span>
+      <button class="kbtn" id="keyDown" aria-label="Bajar medio tono">−</button>
+      <span class="kname" id="keyName">–</span>
+      <button class="kbtn" id="keyUp" aria-label="Subir medio tono">+</button>
+      <button class="kreset" id="keyReset">Tono original</button>
+      <span class="kfixed" id="keyFixed" hidden>Tono fijo</span>
+    </div>
+    <div class="checks">
+      <label for="countIn"><input type="checkbox" id="countIn" checked> Cuenta al empezar</label>
+      <label for="groove" id="grooveWrap" hidden><input type="checkbox" id="groove" checked> Base de percusión</label>
+      <label for="loopLine"><input type="checkbox" id="loopLine"> Repetir solo la frase elegida</label>
+      <label for="mute"><input type="checkbox" id="mute"> Lira sin sonido (solo luces)</label>
+      <label for="voiceSel" id="voiceWrap" hidden>Liras <select id="voiceSel"><option value="both">Lira 1 y Lira 2</option><option value="1">Solo Lira 1 (melodía)</option><option value="2">Solo Lira 2 (armonía)</option></select></label>
+    </div>
+  </div>
+  <fieldset class="perc" id="percBox" hidden>
+    <legend>Base de percusión</legend>
+    <label class="stylepick" for="styleSel">Ritmo <select id="styleSel"><option value="merengue">Merengue</option><option value="cumbia">Cumbia</option><option value="salsa">Salsa</option><option value="reggaeton">Reggaetón</option><option value="epico">Épico 3/4</option><option value="desfile">Desfile</option><option value="marcha">Marcha</option></select></label>
+    <label class="stylepick" for="varSel">Variante <select id="varSel"></select></label>
+    <label class="stylepick" for="arrange"><input type="checkbox" id="arrange" checked> Arreglo con paradas y repiques (como banda en vivo)</label>
+    <label for="inst-bombo"><input type="checkbox" id="inst-bombo" checked> Bombos de marcha (3 tonos)</label>
+    <label for="inst-tenor"><input type="checkbox" id="inst-tenor" checked> Multitenor</label>
+    <label for="inst-redo"><input type="checkbox" id="inst-redo" checked> Redoblante</label>
+    <label for="inst-congas"><input type="checkbox" id="inst-congas" checked> Congas</label>
+    <label for="inst-bongo"><input type="checkbox" id="inst-bongo" checked> Bongó</label>
+    <label for="inst-timbal"><input type="checkbox" id="inst-timbal" checked> Timbaleta</label>
+    <p class="phint">Quite un instrumento para que esa sección de la banda toque su parte en vivo.</p>
+  </fieldset>
+  <div class="status" id="status"></div>
+  </div>
+  </div>
+
+  <section class="score">
+    <h2 id="scoreTitle">Partitura en notas</h2>
+    <p class="hint">Toque una frase para empezar desde ahí. Con “Repetir solo la frase elegida” se practica esa frase en bucle.</p>
+    <div id="score"></div>
+  </section>
+</div>
+
+<script>
+// ===================== Lira =====================
+// Lira de banda: 16 naturales (Sol grave a La agudo) y 10 cromáticas. Notas en número MIDI (Do central = 60).
+const NAT = [67,69,71,72,74,76,77,79,81,83,84,86,88,89,91,93];
+const CHR = [[70,1],[73,3],[75,4],[78,6],[80,7],[82,8],[85,10],[87,11],[90,13],[92,14]]; // [nota, natural de abajo]
+const LIRA = new Set([...NAT,...CHR.map(c=>c[0])]);
+const SHARP = ['Do','Do♯','Re','Re♯','Mi','Fa','Fa♯','Sol','Sol♯','La','La♯','Si'];
+const FLAT  = ['Do','Re♭','Re','Mi♭','Mi','Fa','Sol♭','Sol','La♭','La','Si♭','Si'];
+const NATPC = new Set([0,2,4,5,7,9,11]);
+const PCCOLOR = {0:'--c-do',2:'--c-re',4:'--c-mi',5:'--c-fa',7:'--c-sol',9:'--c-la',11:'--c-si'};
+const SEMI = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const toMidi = k => {const m=k.match(/^([A-G])(#?)(\d)$/);return 12*(+m[3]+1)+SEMI[m[1]]+(m[2]?1:0)};
+const pc = m => ((m%12)+12)%12;
+const colorVar = m => NATPC.has(pc(m)) ? `var(${PCCOLOR[pc(m)]})` : 'var(--c-alt)';
+const octWord = m => m<72?'grave':m>=84?'agudo':'';
+// tonalidad: {t: clase de altura de la tónica, minor: bool}
+function flatKey(k){return k.minor?[2,7,0,5,10].includes(k.t):[5,10,3,8,1].includes(k.t)}
+function spell(m,k){
+  const p=pc(m);
+  if(NATPC.has(p))return SHARP[p];
+  if(k.minor&&p===pc(k.t+11))return SHARP[p];      // sensible de la escala menor
+  if(!k.minor&&p===pc(k.t+6))return SHARP[p];      // cuarto grado elevado
+  return flatKey(k)?FLAT[p]:SHARP[p];
+}
+function keyName(k){const n=flatKey(k)?FLAT[k.t]:SHARP[k.t];return n+(k.minor?' menor':' mayor')}
+
+// ===================== Repertorio =====================
+// Duraciones en negras (1 = negra, .5 = corchea, .25 = semicorchea, 1.5 = negra con puntillo). Silencios sumados a la nota anterior.
+// Cada sección se escribe en una tonalidad de referencia y "shift" la lleva (en semitonos) a la tonalidad de banda, en registro agudo.
+function L(lyric,notes,durs,n2,d2){const ns=notes.trim().split(/\s+/);if(ns.length!==durs.length)throw new Error('Notas y ritmos no coinciden: '+lyric);
+  const o={lyric,notes:ns,durs};
+  if(n2){o.notes2=n2.trim().split(/\s+/);o.durs2=d2;const a=durs.reduce((x,y)=>x+y,0),b=d2.reduce((x,y)=>x+y,0);
+    if(o.notes2.length!==d2.length||Math.abs(a-b)>1e-9)throw new Error('Lira 2 no cuadra: '+lyric)}
+  return o}
+function S(name,key,shift,meter,lines){const m=key.match(/^([A-G]#?)(m?)$/);return {name,key:{t:pc(SEMI[m[1][0]]+(m[1][1]?1:0)),minor:!!m[2]},shift,meter,lines}}
+
+// ---- 1. Popurrí festivo (Sol mayor, tono fijo) ----
+const DECK1='D6 C6 B5 A5 G5 A5 B5 G5', DECK1R=[1.5,.5,1,1,1,1,1,1];
+const DECK2='A5 B5 C6 A5 B5 A5 G5 F#5 G5', DECK2R=[.5,.5,.5,.5,1.5,.5,1,1,2];
+const deck = S('Deck the Halls','G',0,4,[
+  L('Deck the halls with boughs of holly',DECK1,DECK1R),
+  L('Fa la la la la, la la la la',DECK2,DECK2R),
+  L('’Tis the season to be jolly',DECK1,DECK1R),
+  L('Fa la la la la, la la la la',DECK2,DECK2R),
+  L('Don we now our gay apparel','A5 B5 C6 A5 B5 C6 D6 A5',[1.5,.5,1,1,1.5,.5,1,1]),
+  L('Fa la la, la la la, la la la','B5 C#6 D6 E6 F#6 G6 F#6 E6 D6',[.5,.5,1,.5,.5,1,1,1,2]),
+  L('Troll the ancient Yuletide carol',DECK1,DECK1R),
+  L('Fa la la la la, la la la la','E6 E6 E6 E6 D6 C6 B5 A5 G5',[.5,.5,.5,.5,1.5,.5,1,1,4])]);
+// Joy to the World (Antioch, 2/4). Escrita en Do y llevada a Sol mayor (+7): de Sol a Sol agudo.
+const joy = S('Joy to the World','C',7,2,[
+  L('Joy to the world, the Lord is come!','C6 B5 A5 G5 F5 E5 D5 C5',[1,.75,.25,1.5,.5,1,1,1.5]),
+  L('Let earth receive her King;','G5 A5 A5 B5 B5 C6',[.5,1.5,.5,1.5,.5,1.5]),
+  L('Let every heart prepare Him room,','C6 C6 B5 A5 G5 G5 F5 E5',[.5,.5,.5,.5,.5,.75,.25,.5]),
+  L('and heaven and nature sing,','C6 C6 B5 A5 G5 G5 F5 E5',[.5,.5,.5,.5,.5,.75,.25,.5]),
+  L('and heaven and nature sing,','E5 E5 E5 E5 E5 F5 G5 F5 E5',[.5,.5,.5,.5,.25,.25,1.5,.25,.25]),
+  L('and heaven and nature sing,','D5 D5 D5 D5 E5 F5 E5 D5',[.5,.5,.5,.25,.25,1.5,.25,.25]),
+  L('and heaven, and heaven, and nature sing!','C5 C6 A5 G5 F5 E5 F5 E5 D5 C5',[.5,1,.5,.75,.25,.5,.5,1,1,2])]);
+
+// ---- 7. Navidad, Navidad ----
+const NAV1='B4 B4 B4 B4 B4 B4 B4 D5 G4 A4 B4', NAV1R=[.5,.5,1,.5,.5,1,.5,.5,.5,.5,2];
+const navCoro=(last)=>S('Coro','G',17,2,[
+  L('Coro · frase 1',NAV1,NAV1R),
+  L('Coro · frase 2','C5 C5 C5 C5 B4 B4 B4 A4 A4 B4 A4 D5',[.5,.5,1,.5,.5,1,.5,.5,.5,.5,1,1]),
+  L('Coro · frase 3',NAV1,NAV1R),
+  L('Coro · frase 4','C5 C5 C5 C5 B4 B4 D5 D5 C5 A4 G4',[.5,.5,1,.5,.5,1,.5,.5,.5,.5,last])]);
+
+// ---- Carol of the Bells (Shchedryk, M. Leontovych, 1916 · dominio público) ----
+// Melodía de soprano en La menor, 3/4. Sin la letra en inglés de Wilhousky (protegida).
+const CM1='C6 B5 C6 A5', CM2='E6 D6 E6 C6', CR=[1,.5,.5,1];
+const rep=(n,k)=>Array(n).fill(k).join(' '), repR=n=>Array(n).fill(CR).flat();
+// Ritmo: el motivo de toda la pieza es negra – corchea – corchea – negra (♩ ♪♪ ♩).
+// Las frases agudas van negra – corchea – corchea – corchea – corchea.
+// Lira 2: bajo descendente La–Sol–Fa–Mi bajo las campanas y terceras bajo la melodía.
+const R5=[1,.5,.5,.5,.5], SC=[.5,.5,.5,.5,.5,.5];
+const carolMel=name=>S(name,'Am',0,3,[
+  L('Melodía · frase 1','A6 A6 A6 G6 F6',R5,'F6 F6 F6 E6 D6',R5),
+  L('Melodía · frase 2','E6 E6 E6 D6 C6',R5,'C6 C6 C6 B5 A5',R5),
+  L('Melodía · frase 3','D6 D6 D6 E6 D6',R5,'B5 B5 B5 C6 B5',R5),
+  L('Melodía · frase 4 (campanadas)','A5 A5 A5 A5',CR,'E5 E5 E5 E5',CR),
+  L('Escala que sube','E5 F#5 G#5 A5 B5 C6',SC,'C5 D5 E5 F#5 G#5 A5',SC),
+  L('Remate','D6 E6 D6 C6',CR,'B5 C6 B5 A5',CR),
+  L('Escala que sube','E5 F#5 G#5 A5 B5 C6',SC,'C5 D5 E5 F#5 G#5 A5',SC),
+  L('Remate','D6 E6 D6 C6',CR,'B5 C6 B5 A5',CR)]);
+const carolBells=(name,n)=>S(name,'Am',0,3,[
+  ...Array(n/4).fill(0).map((_,i)=>L('Campanas: Do – Si – Do – La ('+(i*4+1)+'–'+(i*4+4)+')',rep(4,CM1),repR(4),'A5 G5 F5 E5',[3,3,3,3])),
+  L('Campanas arriba: Mi – Re – Mi – Do',rep(4,CM2),repR(4),'A5 G5 F5 E5',[3,3,3,3])]);
+const carolFinal=S('Final','Am',0,3,[
+  L('Campanas: Do – Si – Do – La',rep(5,CM1),repR(5),'A5 G5 F5 E5 A5',[3,3,3,3,3]),
+  L('Campanadas','A5 A5 A5',[1,1,1],'C5 C5 C5',[1,1,1]),
+  L('Último toque','E6 D6 E6 A5',[1,.5,.5,4],'C6 B5 C6 C5',[1,.5,.5,4])]);
+
+// ---- Mix: Los peces en el río + Campana sobre campana (tradicionales, dominio público) ----
+// Ritmos de los Cancioneros Navidad #1 y #3 (Música Encriptada), 2/4.
+// Los peces en La menor (empieza en Do agudo, usa Sol♯); Campana en Do mayor (misma armadura, usa Fa♯ en la segunda parte).
+const PZ_A='C6 C6 C6 C6 B5 A5 B5 A5 B5 G#5 E5', PZ_B='D6 D6 D6 D6 C6 B5 C6 B5 C6 B5 A5';
+const PZ_V=[1,.5,.5,1,.5,.5,.5,.5,.5,.5,2], PZ_VF=[1,.5,.5,1,.5,.5,.5,.5,.5,.5,1.5];
+const pzEstrofa=S('Los peces · Estrofa','Am',0,2,[
+  L('La Virgen se está peinando',PZ_A,PZ_V),L('entre cortina y cortina',PZ_B,PZ_V),
+  L('sus cabellos son de oro',PZ_A,PZ_V),L('y el peine de plata fina',PZ_B,PZ_VF)]);
+const pzCoro=name=>{const sec=S(name,'Am',0,2,[
+  L('Pero mira cómo beben','A5 B5 C6 B5 C6 B5 C6 C6',[.25,.25,.5,.5,.5,.5,1,.5]),
+  L('los peces en el río','C6 D6 C6 D6 C6 B5 B5',[.5,.5,.5,.5,.5,.5,1]),
+  L('pero mira cómo beben','B5 C6 D6 C6 D6 C6 B5 B5',[.25,.25,.5,.5,.5,.5,1,.5]),
+  L('por ver al Dios nacido','A5 G#5 A5 B5 C6 A5 A5',[.5,.5,.5,.5,.5,.5,1.5]),
+  L('Beben y beben y vuelven a beber','C6 C6 B5 C6 C6 C6 D6 C6 D6 C6 B5',[1,.5,.5,1,.5,.5,.5,.5,.5,.5,1.5]),
+  L('los peces en el río','C6 D6 C6 D6 C6 B5 B5',[.5,.5,.5,.5,.5,1,.5]),
+  L('por ver a Dios nacer','A5 G#5 A5 B5 C6 A5',[.5,.5,.5,.5,.5,2])]);sec.pickup=.5;return sec};
+const CP_A='C5 C5 C5 C5 B4 C5 D5 B4 G4', CP_B='D5 D5 E5 F5 E5 D5 E5 D5 C5';
+const CP_R=[1,.5,.5,1,.5,.5,1.5,.5,2], CP_RF=[1,.5,.5,1,.5,.5,1.5,.5,1.5];
+const cpEstrofa=S('Campana · Estrofa','C',0,2,[
+  L('Campana sobre campana',CP_A,CP_R),L('y sobre campana una,',CP_B,CP_R),
+  L('asómate a la ventana,',CP_A,CP_R),L('verás al Niño en la cuna.',CP_B,CP_RF)]);
+const cpCoro=(name,last)=>{const sec=S(name,'C',0,2,[
+  L('Belén, campanas de Belén,','E5 G5 G5 A5 G5 F5 A5 G5',[.5,1.5,.5,.5,.5,.5,.5,1.5]),
+  L('que los ángeles tocan,','G5 A5 G5 A5 B5 C6 G5',[.5,.5,.5,.5,.5,.5,.5]),
+  L('¿qué nuevas me traéis?','E5 A5 G5 F5 E5 D5 C5',[.5,.5,.5,.5,.5,.5,last])]);sec.pickup=.5;return sec};
+const CP_B1=[1.5,.5,.5,.5,1,1.5,.5,.5,.5,1], CP_B2=[1.5,.5,1.5,.5,1.5,.5,.5,.5,1], CP_B2F=[1.5,.5,1.5,.5,1.5,.5,.5,.5,.5];
+const cpSegunda=S('Campana · Segunda parte','C',0,2,[
+  L('Recogido tu rebaño,','E5 F5 E5 D5 C5 G5 A5 G5 F5 E5',CP_B1),
+  L('¿a dónde vas, pastorcillo?','G5 G5 F#5 D5 G5 F5 E5 D5 C5',CP_B2),
+  L('Voy a llevar al portal','E5 F5 E5 D5 C5 G5 A5 G5 F5 E5',CP_B1),
+  L('requesón, manteca y vino.','G5 G5 F#5 D5 G5 F5 E5 D5 C5',CP_B2F)]);
+
+const SONGS=[
+ {id:'popurri',num:1,title:'Popurrí festivo',tempo:116,fixedKey:true,groove:'merengue',
+  info:'Deck the Halls y Joy to the World · Sol mayor (tono fijo) · ritmo de merengue',
+  sections:[deck,joy]},
+ {id:'carol',num:'C',title:'Carol of the Bells',tempo:160,groove:'epico',
+  info:'La menor · 3/4 · dos liras · melodía original de Leontovych (Shchedryk) · ritmo épico con hemiola',
+  sections:[carolBells('Campanas',16),carolMel('Melodía'),carolBells('Campanas (vuelta)',20),carolMel('Melodía (vuelta)'),carolFinal]},
+ {id:'mix',num:'M',title:'Peces + Campana',tempo:120,groove:'merengue',
+  info:'Los peces en La menor · Campana en Do mayor (misma armadura) · 2/4 · merengue con cortes',
+  sections:[pzEstrofa,pzCoro('Los peces · Estribillo'),cpEstrofa,cpCoro('Campana · Estribillo',2),cpSegunda,cpCoro('Campana · Estribillo',1.5),pzCoro('Los peces · Estribillo final')]},
+ {id:'navidad',num:7,title:'Navidad, Navidad',tempo:126,fixedKey:true,groove:'cumbia',
+  info:'Do mayor (tono fijo) · 2/4 · Coro en cumbia – Estrofa en reggaetón – Coro en cumbia',
+  sections:[
+   navCoro(2),
+   Object.assign(S('Estrofa','G',17,2,[
+     L('Estrofa · frase 1','D4 B4 A4 G4 D4 D4 D4 B4 A4 G4 E4',[.5,.5,.5,.5,1.5,.5,.5,.5,.5,.5,2]),
+     L('Estrofa · frase 2','E4 C5 B4 A4 F#4 F#4 D5 D5 C5 A4 B4',[.5,.5,.5,.5,1.5,.5,.5,.5,.5,.5,2]),
+     L('Estrofa · frase 3','D4 B4 A4 G4 D4 D4 D4 B4 A4 G4 E4',[.5,.5,.5,.5,1.5,.5,.5,.5,.5,.5,2]),
+     L('Estrofa · frase 4','E4 C5 B4 A4 D5 D5 D5 D5 E5 D5 C5 A4 G4',[.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,.5,2])]),{style:'reggaeton'}),
+   navCoro(4)]}
+];
+
+// ===================== Estado =====================
+let song, events=[], lineStarts=[], events2=[], userShift=0;
+let selLine=null;
+const $=id=>document.getElementById(id);
+const barEls={}, barText={};
+
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+const ROW=32, TOP=82, BH=26, CX=220;
+const yNat=i=>TOP+(NAT.length-1-i)*ROW;
+function build(){
+  const fr=$('frame');
+  el('path',{class:'rail',d:'M24 612 L88 104 Q98 46 40 30'},fr);
+  el('path',{class:'rail',d:'M416 612 L352 104 Q342 46 400 30'},fr);
+  el('line',{class:'post',x1:92,y1:66,x2:348,y2:66},fr);
+  el('line',{class:'post',x1:CX,y1:66,x2:CX,y2:622},fr);
+  el('line',{class:'post',x1:30,y1:606,x2:410,y2:606},fr);
+  el('rect',{class:'tip',x:26,y:20,width:26,height:18,rx:6,transform:'rotate(-12 39 29)'},fr);
+  el('rect',{class:'tip',x:388,y:20,width:26,height:18,rx:6,transform:'rotate(12 401 29)'},fr);
+  el('rect',{class:'tip',x:212,y:614,width:16,height:16,rx:4},fr);
+  const g=$('bars');
+  NAT.forEach((m,i)=>{const w=172-i*4.6;mkBar(m,'nat',CX+4,yNat(i)-BH/2,w,BH,g)});
+  CHR.forEach(([m,j])=>{const w=150-j*4;mkBar(m,'chroma',CX-4-w,yNat(j)-ROW/2-11,w,22,g)});
+  SONGS.forEach((s,i)=>{const t=document.createElement('button');t.className='tab';t.setAttribute('role','tab');t.id='tab-'+s.id;
+    t.innerHTML=`<span class="tnum">${s.num}</span>${s.title}`;t.onclick=()=>selectSong(i);$('tabs').appendChild(t)});
+}
+function mkBar(m,kind,x,y,w,h,parent){
+  const g=el('g',{class:'bar '+kind,tabindex:0,role:'button'},parent);
+  el('rect',{class:'body',x,y,width:w,height:h,rx:4},g);
+  el('rect',{class:'hl',x,y,width:w,height:h,rx:4},g);
+  el('rect',{class:'hl2',x,y,width:w,height:h,rx:4},g);
+  el('rect',{class:'ring',x:x-2,y:y-2,width:w+4,height:h+4,rx:6},g);
+  el('circle',{class:'rivet',cx:x+9,cy:y+h/2,r:3.4},g);
+  el('circle',{class:'rivet',cx:x+w-9,cy:y+h/2,r:3.4},g);
+  el('circle',{class:'dot',cx:kind==='nat'?x+24:x+w-24,cy:y+h/2,r:5,fill:colorVar(m)},g);
+  const t=el('text',{x:kind==='nat'?x+w/2+8:x+w/2-8,y:y+h/2+5,'text-anchor':'middle'},g);
+  const nm=el('tspan',{},t);nm.textContent=SHARP[pc(m)];
+  const oc=octWord(m);if(oc){const sp=el('tspan',{class:'oc',dx:4},t);sp.textContent=oc}
+  const hit=()=>{ensureCtx();if(!$('mute').checked)bell(m,ctx.currentTime+.01,1);flash(m)};
+  g.addEventListener('click',hit);
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();hit()}});
+  barEls[m]=g;barText[m]=nm;return g;
+}
+
+// ---------- construir eventos ----------
+function compile(shift){
+  const evs=[],starts=[],evs2=[];let beat=0,g=0;
+  song.sections.forEach((sec,si)=>{
+    sec.startBeat=beat;
+    const k={t:pc(sec.key.t+sec.shift+shift),minor:sec.key.minor};
+    sec.lines.forEach((ln,li)=>{
+      starts.push(evs.length);
+      if(ln.notes2){let b2=beat;ln.notes2.forEach((n,ni)=>{const m=toMidi(n)+sec.shift+shift;evs2.push({m,name:spell(m,k),d:ln.durs2[ni],beat:b2,g,ni});b2+=ln.durs2[ni]})}
+      ln.notes.forEach((n,ni)=>{const m=toMidi(n)+sec.shift+shift;evs.push({m,name:spell(m,k),d:ln.durs[ni],beat,si,li,g,ni});beat+=ln.durs[ni]});
+      g++;
+    });
+  });
+  return {evs,starts,evs2};
+}
+function sectionAt(b){let r=song.sections[0];for(const sec of song.sections){if(sec.startBeat<=b+1e-9)r=sec}return r}
+const fits=shift=>{const r=compile(shift);return r.evs.concat(r.evs2).every(e=>LIRA.has(e.m))};
+function sectionKey(sec){return {t:pc(sec.key.t+sec.shift+userShift),minor:sec.key.minor}}
+
+function selectSong(i){
+  stop(true);
+  song=SONGS[i];
+  document.querySelectorAll('.tab').forEach((t,j)=>t.setAttribute('aria-selected',j===i));
+  $('sub').textContent='Lira de banda · 26 láminas · '+song.info;
+  $('tempo').value=song.tempo;$('tempoOut').textContent=song.tempo;curSpb=60/song.tempo;
+  userShift=0;if(!song.fixedKey){try{const v=+localStorage.getItem('lira-shift-'+song.id);if(v&&fits(v))userShift=v}catch(e){}}
+  $('grooveWrap').hidden=!song.groove;$('percBox').hidden=!song.groove;
+  if(song.groove){curStyle=song.groove;const m3=song.sections[0].meter===3;
+    [...$('styleSel').options].forEach(o=>{const sm=STYLES[o.value].meter||2;o.disabled=(sm===3)!==m3});
+    $('styleSel').value=curStyle;varMode='auto';fillVarSel()}
+  try{localStorage.setItem('lira-song-lira-navidena',song.id)}catch(e){}
+  rebuild();
+}
+function rebuild(){
+  const r=compile(userShift);events=r.evs;lineStarts=r.starts;events2=r.evs2;
+  $('voiceWrap').hidden=!events2.length;$('v2Box').hidden=!events2.length;
+  // nombres de las láminas negras según cómo se escriben en esta pieza
+  const k0=sectionKey(song.sections[0]);
+  Object.keys(barText).forEach(m=>{m=+m;const e=events.concat(events2).find(x=>x.m===m);barText[m].textContent=e?e.name:spell(m,k0)});
+  const used=new Set(events.concat(events2).map(e=>e.m));
+  Object.entries(barEls).forEach(([m,b])=>b.classList.toggle('used',used.has(+m)));
+  const keys=[...new Set(song.sections.map(s=>keyName(sectionKey(s))))];
+  $('keyName').textContent=keys.join(' · ');
+  $('keyUp').disabled=song.fixedKey||!fits(userShift+1);$('keyDown').disabled=song.fixedKey||!fits(userShift-1);
+  $('keyFixed').hidden=!song.fixedKey;
+  $('keyReset').hidden=userShift===0;
+  selLine=null;renderScore();showIdle();
+}
+function changeKey(dir){
+  if(!fits(userShift+dir)){$('status').textContent=dir>0?'Más arriba la melodía se sale de la lira (el La es la lámina más aguda).':'Más abajo la melodía se sale de la lira.';return}
+  stop(true);userShift+=dir;try{localStorage.setItem('lira-shift-'+song.id,userShift)}catch(e){}
+  $('status').textContent=userShift?`Transportado ${userShift>0?'+':''}${userShift} semitono${Math.abs(userShift)>1?'s':''} respecto al tono original.`:'Tono original.';
+  rebuild();
+}
+
+function renderScore(){
+  const sc=$('score');sc.innerHTML='';$('scoreTitle').textContent='Partitura en notas · '+song.title;
+  let g=0;
+  song.sections.forEach((sec,si)=>{
+    const bl=document.createElement('div');bl.className='block';
+    const meter=sec.meter===2?'2/4':sec.meter===3?'3/4':'4/4';
+    bl.innerHTML=`<h3>${sec.name} <span class="meta">${keyName(sectionKey(sec))} · ${meter}</span></h3>`;
+    sec.lines.forEach(ln=>{
+      const evs=events.slice(lineStarts[g],lineStarts[g]+ln.notes.length);
+      const r=document.createElement('div');r.className='row';r.tabIndex=0;r.dataset.g=g;r.setAttribute('role','button');
+      const fmt=list=>list.map(e=>`<i style="--nc:${colorVar(e.m)}">${e.name}${e.m>=84?'′':e.m<72?'₁':''}</i>`).join('');
+      const e2=events2.filter(x=>x.g===g);
+      r.innerHTML=`<span class="ly">${ln.lyric}</span><span class="ns">${e2.length?'<b class="vl">L1</b>':''}${fmt(evs)}${e2.length?'<br><b class="vl v2">L2</b>'+fmt(e2):''}</span>`;
+      const gg=g;r.onclick=()=>startAtLine(gg);r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();startAtLine(gg)}};
+      bl.appendChild(r);g++;
+    });
+    sc.appendChild(bl);
+  });
+}
+
+// ===================== Audio =====================
+let ctx=null, master=null, percBus=null, noiseBuf=null;
+function ensureCtx(){
+  if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const comp=ctx.createDynamicsCompressor();master=ctx.createGain();master.gain.value=.5;master.connect(comp);comp.connect(ctx.destination);
+    percBus=ctx.createGain();percBus.gain.value=.5;percBus.connect(comp);
+    noiseBuf=ctx.createBuffer(1,ctx.sampleRate*.5,ctx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
+  if(ctx.state==='suspended')ctx.resume();
+}
+const live=[];
+function track(node,t){live.push({node,t});if(live.length>600)live.splice(0,200)}
+function bell(m,t,len){
+  const f=440*Math.pow(2,(m-69)/12);
+  [[1,1,1.4*len+.5],[2.76,.3,.5],[5.4,.1,.25],[8.93,.04,.12]].forEach(([r,a,dec])=>{
+    const o=ctx.createOscillator(),gn=ctx.createGain();o.type='sine';o.frequency.value=f*r;
+    gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(a*.5,t+.004);gn.gain.exponentialRampToValueAtTime(.0001,t+dec);
+    o.connect(gn);gn.connect(master);o.start(t);o.stop(t+dec+.05);track(o,t);
+  });
+}
+function click(t,accent){
+  const o=ctx.createOscillator(),gn=ctx.createGain();o.frequency.value=accent?1900:1300;
+  gn.gain.setValueAtTime(.35,t);gn.gain.exponentialRampToValueAtTime(.0001,t+.06);
+  o.connect(gn);gn.connect(master);o.start(t);o.stop(t+.08);track(o,t);
+}
+function noise(t,dur,freq,q,gain,type){
+  const s=ctx.createBufferSource();s.buffer=noiseBuf;const f=ctx.createBiquadFilter();f.type=type||'bandpass';f.frequency.value=freq;f.Q.value=q;
+  const g=ctx.createGain();g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(percBus);s.start(t);s.stop(t+dur+.02);track(s,t);
+}
+function drum(t,f0,f1,dur,gain){
+  const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(gain,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(percBus);o.start(t);o.stop(t+dur+.02);track(o,t);
+}
+// Base de banda (patrón de 4 tiempos, 16 semicorcheas). En 2/4 el patrón ocupa dos compases.
+// Bombos de marcha a dos tonos, multitenor, congas (tumbao), bongó (martillo) y timbaleta (cáscara).
+function tone(t,f0,f1,dur,gain,type){
+  const o=ctx.createOscillator(),g=ctx.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur*.6);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.003);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g);g.connect(percBus);o.start(t);o.stop(t+dur+.02);track(o,t);
+}
+const INST={
+  bombo:{play:(t,v)=>{const f=v===1?[62,44,600]:v===3?[78,56,750]:[96,70,900];tone(t,f[0],f[1],.38,.95);noise(t,.03,f[2],1,.25)}},
+  tenor:{play:(t,v)=>{const f=[330,262,220,175][v-1];tone(t,f,f*.82,.16,.42,'triangle');noise(t,.025,2400,1.2,.22)}},
+  redo:{play:(t,v)=>{if(v===4){tone(t,1250,1200,.05,.35,'triangle');noise(t,.02,3000,2,.2);return}const g=v===2?.5:v===1?.3:.13;noise(t,.14,1900,.9,g);tone(t,200,170,.07,g*.6,'triangle')}},
+  congas:{play:(t,v)=>{if(v===3){noise(t,.05,1800,1.4,.42);tone(t,330,300,.06,.2)}else if(v===4){tone(t,260,250,.05,.08)}else if(v===5){tone(t,110,95,.18,.4)}else{const f=v===1?235:185;tone(t,f,f*.96,.22,.42)}}},
+  bongo:{play:(t,v)=>{if(v===3){tone(t,390,390,.09,.13,'square');tone(t,585,585,.07,.08,'square');return}const f=v===2?430:330;tone(t,f,f*.95,.09,v===2?.36:.26);noise(t,.02,3500,1.5,.08)}},
+  timbal:{play:(t,v)=>{if(v===2){tone(t,520,480,.25,.32);noise(t,.04,3000,1,.25)}else if(v===3){tone(t,545,545,.12,.12,'square');tone(t,815,815,.1,.08,'square')}else{noise(t,.03,4200,3,v===4?.18:.32);tone(t,1900,1900,.03,.05,'square')}}}
+};
+// Patrones en semicorcheas: 16 pasos = 4 tiempos (dos compases de 2/4 o un 4/4); la salsa usa 32 pasos (ciclo de clave).
+// bombo 1=grave 3=medio 2=agudo · tenor 1..4 agudo→grave · redo 1=normal 2=acento 3=ghost 4=aro (clave)
+// congas 1=quinto abierto 2=conga abierta 3=slap 4=toque 5=bajo · bongó 1=hembra 2=macho 3=campana de bongó
+// timbal 1=cáscara 2=golpe 3=campana 4=cáscara suave
+// Cada ritmo tiene dos variantes (A para partes suaves, B para partes fuertes) y su propio repique de 1 tiempo.
+const STYLES={
+  merengue:{name:'Merengue', var:{A:'Derecho',B:'Jaleo'},
+    // Derecho: parejo, tambora (bombos) grave en el 1 y anacrusa al siguiente 1, güira (redoblante) corchea + 2 semicorcheas.
+    A:{bombo:[1,0,0,0, 2,0,0,2, 1,0,0,0, 2,0,2,2], tenor:[0,0,0,0, 0,0,0,0, 0,0,0,0, 1,2,3,4],
+       redo:[2,0,1,1, 2,0,1,1, 2,0,1,1, 2,0,1,1], congas:[4,4,3,4, 4,4,1,1, 4,4,3,4, 4,4,2,2],
+       bongo:[2,0,1,0, 2,0,1,0, 2,0,1,0, 2,0,1,0], timbal:[3,0,0,0, 3,0,0,0, 3,0,0,0, 3,0,0,0]},
+    // Jaleo: el clímax, más sincopado: bombo pesado en cada tiempo (estilo maco), güira continua, campana en corcheas.
+    B:{bombo:[1,0,0,2, 1,0,2,2, 1,0,0,2, 1,0,2,2], tenor:[0,0,0,0, 0,0,1,0, 0,0,0,0, 1,2,3,4],
+       redo:[2,1,1,1, 2,1,1,1, 2,1,1,1, 2,1,1,1], congas:[4,4,3,4, 4,1,4,1, 4,4,3,4, 4,2,4,2],
+       bongo:[2,0,1,1, 2,0,1,1, 2,0,1,1, 2,0,1,1], timbal:[3,0,3,0, 3,0,3,0, 3,0,3,0, 3,0,3,0]},
+    // Repique de tambora: semicorcheas que caen en el 1 siguiente.
+    fill:{bombo:[0,0,2,2], tenor:[1,2,3,4], redo:[1,1,2,2], congas:[3,3,1,2], bongo:[0,0,0,0], timbal:[0,0,0,2]}},
+  cumbia:{name:'Cumbia', var:{A:'Llamador',B:'Alegre'},
+    // Llamador: pulso sencillo, bombo en cada tiempo, aro a contratiempo, congas bajo–slap–bajo–abierto, guacharaca en la cáscara.
+    A:{bombo:[1,0,0,0, 2,0,0,0, 1,0,0,0, 2,0,0,0], tenor:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+       redo:[0,0,1,0, 2,0,1,0, 0,0,1,0, 2,0,1,0], congas:[5,0,3,0, 5,0,1,0, 5,0,3,0, 5,0,2,0],
+       bongo:[2,0,1,0, 1,0,2,0, 2,0,1,0, 1,0,2,0], timbal:[1,0,4,4, 1,0,4,4, 1,0,4,4, 1,0,4,4]},
+    // Alegre: más movida: bombo "1 – 2 y", multitenor de llamador a contratiempo, congas adornan el final del ciclo.
+    B:{bombo:[1,0,0,0, 2,0,2,0, 1,0,0,0, 2,0,2,0], tenor:[0,0,2,0, 0,0,2,0, 0,0,2,0, 0,0,2,0],
+       redo:[0,0,1,0, 2,0,1,1, 0,0,1,0, 2,0,1,1], congas:[5,0,3,0, 5,0,1,0, 5,0,3,0, 3,3,1,2],
+       bongo:[2,0,1,1, 2,0,1,1, 2,0,1,1, 2,0,1,1], timbal:[1,0,4,4, 1,0,4,4, 1,0,4,4, 1,0,4,4]},
+    // Repique de alegre: congas y bongó adornan, el multitenor responde.
+    fill:{bombo:[0,0,0,2], tenor:[0,0,2,3], redo:[0,1,1,2], congas:[3,3,1,2], bongo:[2,1,2,1], timbal:[0,0,0,2]}},
+  salsa:{name:'Salsa', var:{A:'Cuerpo',B:'Mambo'},
+    // Cuerpo (clave 2-3): cáscara en la timbaleta, clave en el aro del redoblante, martillo en el bongó, tumbao básico.
+    A:{bombo:[0,0,0,0, 0,0,1,0, 0,0,0,0, 2,0,0,0,  0,0,0,0, 0,0,1,0, 0,0,0,0, 2,0,0,0],
+       tenor:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,  0,0,0,0, 0,0,0,0, 0,0,0,0, 1,2,3,4],
+       redo:[0,0,0,0, 4,0,0,0, 4,0,0,0, 0,0,0,0,  4,0,0,0, 0,0,4,0, 0,0,0,0, 4,0,0,0],
+       congas:[5,0,4,0, 3,0,4,0, 5,0,4,0, 1,0,1,0,  5,0,4,0, 3,0,4,0, 5,0,4,0, 1,0,1,0],
+       bongo:[2,0,1,0, 1,0,2,0, 2,0,1,0, 1,0,2,0,  2,0,1,0, 1,0,2,0, 2,0,1,0, 1,0,2,0],
+       timbal:[1,0,1,0, 1,1,0,1, 1,0,1,1, 0,1,0,1,  1,0,1,0, 1,1,0,1, 1,0,1,1, 0,1,0,1]},
+    // Mambo / montuno: campana en la timbaleta, campana de bongó en los tiempos, tumbao con la tumba grave en el 4 y 4&.
+    B:{bombo:[1,0,0,0, 0,0,1,0, 0,0,0,0, 2,0,0,0,  1,0,0,0, 0,0,1,0, 0,0,0,0, 2,0,0,0],
+       tenor:[0,0,0,0, 0,0,2,0, 0,0,0,0, 1,0,0,0,  0,0,0,0, 0,0,2,0, 0,0,0,0, 1,2,3,4],
+       redo:[0,0,0,0, 4,0,0,0, 4,0,0,0, 0,0,0,0,  4,0,0,0, 0,0,4,0, 0,0,0,0, 4,0,0,0],
+       congas:[5,0,4,0, 3,0,4,0, 5,0,4,0, 1,0,1,0,  5,0,4,0, 3,0,4,0, 5,0,4,0, 2,0,2,0],
+       bongo:[3,0,0,0, 3,0,0,0, 3,0,0,0, 3,0,3,0,  3,0,0,0, 3,0,0,0, 3,0,0,0, 3,0,3,0],
+       timbal:[3,0,3,3, 3,0,3,3, 3,0,3,3, 3,0,3,3,  3,0,3,3, 3,0,3,3, 3,0,3,3, 3,0,3,3]},
+    // Abanico: redoble en el timbal que remata en el 1 siguiente.
+    fill:{bombo:[0,0,0,0], tenor:[0,0,0,0], redo:[1,1,1,2], congas:[0,0,1,2], bongo:[0,0,0,0], timbal:[2,2,2,2]}},
+  epico:{name:'Épico', meter:3, var:{A:'Campanas',B:'Completo'},
+    // Ciclo de 2 compases de 3/4 (24 semicorcheas). Pulso estable, sin hemiola.
+    // Campanas: el multitenor imita el motivo de la lira (♩ ♪♪ ♩) moviéndose entre tambores 2–3–2–4;
+    // bombo grave en el 1 y agudo en el 3; redoblante en corcheas suaves; cáscara suave en negras.
+    A:{bombo:[1,0,0,0, 0,0,0,0, 2,0,0,0,  1,0,0,0, 0,0,0,0, 2,0,0,0],
+       tenor:[2,0,0,0, 3,0,2,0, 4,0,0,0,  2,0,0,0, 3,0,2,0, 4,0,0,0],
+       redo:[2,0,3,0, 3,0,3,0, 3,0,3,0,  1,0,3,0, 3,0,3,0, 3,0,3,0],
+       congas:[5,0,0,0, 4,0,4,0, 1,0,0,0,  5,0,0,0, 4,0,4,0, 2,0,0,0],
+       bongo:[0,0,0,0, 0,0,0,0, 0,0,0,0,  0,0,0,0, 0,0,0,0, 0,0,0,0],
+       timbal:[4,0,0,0, 4,0,0,0, 4,0,0,0,  4,0,0,0, 4,0,0,0, 4,0,0,0]},
+    // Completo: bombos grave–agudo–agudo en cada tiempo; multitenor en "8‑8‑16" dando la vuelta a los tambores
+    // (1‑2 | 3‑4‑3 | 2‑1) y un barrido 1‑2‑3‑4 al cerrar el ciclo; redoblante en corcheas con acento en el 1.
+    B:{bombo:[1,0,0,0, 2,0,0,0, 2,0,0,0,  1,0,0,0, 2,0,0,0, 2,0,2,0],
+       tenor:[1,0,2,0, 3,4,3,0, 2,0,1,0,  1,0,2,0, 3,4,3,0, 1,2,3,4],
+       redo:[2,0,1,0, 1,0,1,0, 1,3,1,3,  2,0,1,0, 1,0,1,0, 1,1,1,1],
+       congas:[5,0,3,0, 1,0,1,0, 3,0,1,0,  5,0,3,0, 1,0,1,0, 3,0,2,2],
+       bongo:[2,0,1,0, 2,0,1,0, 2,0,1,0,  2,0,1,0, 2,0,1,0, 2,0,1,0],
+       timbal:[3,0,0,0, 3,0,0,0, 3,0,0,0,  3,0,0,0, 3,0,0,0, 3,0,0,2]},
+    fill:{bombo:[0,0,0,2], tenor:[1,2,3,4], redo:[1,1,2,2], congas:[0,0,3,3], bongo:[0,0,0,0], timbal:[0,0,0,2]}},
+  desfile:{name:'Desfile', var:{A:'Cadencia',B:'Completa'},
+    // Cadencia de desfile (4/4, 16 semicorcheas). Bombos a 3 tonos repartidos como "splits"; redoblante con acentos en 2 y 4.
+    A:{bombo:[1,0,0,0, 3,0,0,0, 1,0,0,0, 3,0,2,0], tenor:[0,0,0,0, 2,0,0,0, 0,0,0,0, 1,0,2,0],
+       redo:[2,0,3,3, 1,0,3,0, 2,0,3,3, 1,0,1,1], congas:[4,0,4,0, 3,0,4,0, 4,0,4,0, 3,0,1,2],
+       bongo:[2,0,1,0, 2,0,1,0, 2,0,1,0, 2,0,1,0], timbal:[3,0,0,0, 3,0,0,0, 3,0,0,0, 3,0,0,0]},
+    // Completa: bombos grave–medio–agudo en "splits", multitenor dando la vuelta con barrido 1‑2‑3‑4, redoblante con diddles.
+    B:{bombo:[1,0,0,3, 0,0,2,0, 1,0,0,3, 0,3,2,0], tenor:[1,0,2,0, 3,0,4,0, 1,2,3,4, 2,0,1,0],
+       redo:[2,0,1,1, 2,0,1,0, 2,1,1,1, 2,0,1,1], congas:[5,0,3,0, 1,0,1,0, 5,0,3,0, 1,1,2,2],
+       bongo:[2,0,1,1, 2,0,1,1, 2,0,1,1, 2,0,1,1], timbal:[3,0,3,0, 3,0,3,0, 3,0,3,0, 2,0,3,0]},
+    // Repique: los tres bombos bajan agudo–medio–grave mientras el multitenor barre.
+    fill:{bombo:[0,2,3,1], tenor:[1,2,3,4], redo:[1,1,2,2], congas:[0,0,3,3], bongo:[0,0,0,0], timbal:[0,0,0,2]}},
+  // Reggaetón (dembow): bombo en cada tiempo, redoblante en el "a" del 1 y el "y" del 2, congas siguiendo el dembow,
+  // cáscara suave en corcheas como hi‑hat. La variante B suma multitenor y bongó con el mismo dibujo.
+  reggaeton:{name:'Reggaetón', var:{A:'Dembow',B:'Dembow fuerte'},
+    A:{bombo:[1,0,0,0, 3,0,0,0, 1,0,0,0, 3,0,0,0], tenor:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,2,3],
+       redo:[0,0,0,2, 0,0,2,0, 0,0,0,2, 0,0,2,0], congas:[5,0,0,3, 0,0,1,0, 5,0,0,3, 0,0,2,0],
+       bongo:[0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], timbal:[4,0,4,0, 4,0,4,0, 4,0,4,0, 4,0,4,0]},
+    B:{bombo:[1,0,0,0, 3,0,0,0, 1,0,0,0, 3,0,2,0], tenor:[0,0,0,2, 0,0,1,0, 0,0,0,2, 0,0,1,0],
+       redo:[0,0,0,2, 0,0,2,0, 0,0,0,2, 0,0,2,0], congas:[5,0,0,3, 0,0,1,0, 5,0,0,3, 0,0,2,0],
+       bongo:[0,0,0,2, 0,0,1,0, 0,0,0,2, 0,0,1,0], timbal:[4,0,4,0, 4,0,4,0, 4,0,4,0, 4,0,4,0]},
+    fill:{bombo:[0,0,0,2], tenor:[1,2,3,4], redo:[1,1,2,2], congas:[0,0,3,3], bongo:[0,0,0,0], timbal:[0,0,0,2]}},
+  marcha:{name:'Marcha', var:{A:'Base',B:'Base'},
+    A:{bombo:[1,0,0,0, 0,0,2,0, 1,0,0,0, 0,0,2,0], tenor:[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,2,3],
+       redo:[2,0,3,3, 1,0,3,0, 2,0,3,3, 1,0,1,1], congas:[4,0,4,0, 3,0,1,1, 4,0,4,0, 3,0,2,2],
+       bongo:[2,0,1,0, 1,0,2,0, 2,0,1,0, 1,0,2,0], timbal:[1,0,1,1, 0,1,1,0, 1,0,1,1, 2,0,1,0]},
+    fill:{bombo:[0,0,0,2], tenor:[1,2,3,4], redo:[1,1,2,2], congas:[0,0,0,0], bongo:[0,0,0,0], timbal:[0,0,0,0]}}
+};
+STYLES.marcha.B=STYLES.marcha.A;
+// Bombos a tres tonos con el mismo ritmo: los golpes agudos que caen en tiempo pasan al bombo medio;
+// los de contratiempo y anacrusa quedan en el agudo.
+// Ajustes para que los tres tonos suenen en todos los ritmos (mismo ritmo, otro tambor):
+for(const st of Object.values(STYLES))for(const v of ['A','B'])if(st[v]&&st[v]!==STYLES.marcha.B||v==='A'){const b=st[v].bombo;if(!st[v]._3){st[v]._3=1;b.forEach((x,i)=>{if(x===2&&i%4===0&&st!==STYLES.desfile)b[i]=3})}}
+STYLES.marcha.A.bombo[8]=3;STYLES.cumbia.A.bombo[12]=2;STYLES.salsa.A.bombo[28]=2;STYLES.epico.A.bombo[20]=2;
+// Variante de cada sección: A en las partes suaves, B en las fuertes.
+const SECVAR={popurri:['A','B'], navidad:['B','B','B'], carol:['A','B','A','B','B'], mix:['A','B','A','B','A','B','B']};
+let varMode='auto';
+function styleAt(b){const sec=sectionAt(b);return (arrOn()&&sec.style)||curStyle}
+function variantAt(b){if(varMode!=='auto')return varMode;const i=song.sections.indexOf(sectionAt(b));return (SECVAR[song.id]||[])[i]||'A'}
+let curStyle='merengue';
+function bandaStep(step,t){const P=STYLES[curStyle].A;for(const k of ['bombo','tenor','redo','congas','bongo','timbal']){const v=P[k][step];if(v&&instOn(k))INST[k].play(t,v)}}
+
+// ===================== Arreglo: paradas, repiques y dinámica que siguen a la lira =====================
+// Tipos: hit = corte (golpe de todos), rest = parada (suena solo la lira), fill = repique para volver a entrar,
+// thin = percusión baja (solo algunos instrumentos), stoptime = golpes solo en el 1 de cada compás, end = golpe final.
+const ARR={
+  mix:[
+    {type:'thin',from:0,to:16,keep:['bombo','redo','timbal','congas']},
+    {type:'hit',at:30},{type:'rest',from:30.25,to:31},{type:'fill',from:31,to:32},
+    {type:'stoptime',from:48,to:51,every:1},
+    {type:'hit',at:62},{type:'rest',from:62.25,to:63},{type:'fill',from:63,to:64},
+    {type:'thin',from:64,to:72,keep:['bombo','timbal','bongo']},
+    {type:'hit',at:86},{type:'rest',from:86.25,to:87},{type:'fill',from:87,to:88},
+    {type:'fill',from:95,to:96},{type:'hit',at:96},
+    {type:'hit',at:108},{type:'rest',from:108.25,to:109},{type:'fill',from:109,to:110},
+    {type:'rest',from:110,to:117},{type:'fill',from:117,to:118},
+    {type:'fill',from:141,to:142},{type:'hit',at:142},
+    {type:'hit',at:154},{type:'rest',from:154.25,to:155},{type:'fill',from:155,to:156},
+    {type:'stoptime',from:172,to:175,every:1},
+    {type:'end',at:186}],
+  carol:[
+    {type:'rest',from:0,to:11},{type:'fill',from:11,to:12},
+    {type:'thin',from:12,to:47,keep:['bombo','redo','timbal','congas']},{type:'fill',from:59,to:60},
+    {type:'stoptime',from:69,to:72,every:1},{type:'fill',from:83,to:84},
+    {type:'thin',from:84,to:120,keep:['bombo','redo','timbal','congas']},{type:'fill',from:155,to:156},
+    {type:'stoptime',from:165,to:168,every:1},{type:'fill',from:179,to:180},
+    {type:'stoptime',from:195,to:198,every:1},{type:'rest',from:198,to:200},
+    {type:'end',at:200}],
+  popurri:[
+    {type:'hit',at:30},{type:'rest',from:30.25,to:31},{type:'fill',from:31,to:32},
+    {type:'thin',from:32,to:47,keep:['bombo','congas','bongo','timbal']},{type:'fill',from:47,to:48},
+    {type:'hit',at:62},{type:'rest',from:62.25,to:65},{type:'fill',from:65,to:66},
+    {type:'stoptime',from:88,to:95},{type:'fill',from:95,to:96},
+    {type:'end',at:102}],
+  navidad:[
+    {type:'hit',at:30},{type:'rest',from:30.25,to:31},{type:'fill',from:31,to:32},
+    {type:'hit',at:46},{type:'rest',from:46.25,to:47},{type:'fill',from:47,to:48},
+    {type:'fill',from:63,to:64},
+    {type:'hit',at:80},{type:'pulse',from:80.25,to:87},{type:'fill',from:87,to:88},
+    {type:'end',at:94}]
+};
+const ARR_LABEL={pulse:'Silencio · solo el cencerro de la timbaleta en el pulso',hit:'¡Corte!',rest:'Parada: suena solo la lira',fill:'Repique para volver a entrar',thin:'Percusión baja',stoptime:'Golpes junto con la lira',end:'Golpe final',full:'Base completa'};
+const arrOn=()=>{const c=document.getElementById('arrange');return !c||c.checked};
+function arrAt(b){
+  const list=(arrOn()&&ARR[song.id])||[];const E=1e-6;
+  const end=list.find(a=>a.type==='end');
+  if(end&&b>=end.at-E)return Math.abs(b-end.at)<E?{type:'end',hit:true}:{type:'after'};
+  for(const a of list){if(a.type==='hit'&&Math.abs(b-a.at)<E)return {type:'hit',hit:true}}
+  for(const a of list){if((a.type==='rest'||a.type==='fill'||a.type==='pulse')&&b>=a.from-E&&b<a.to-E)return a}
+  for(const a of list){if(a.type==='stoptime'&&b>=a.from-E&&b<a.to-E)return a}
+  for(const a of list){if(a.type==='thin'&&b>=a.from-E&&b<a.to-E)return a}
+  return {type:'full'};
+}
+const ALL=['bombo','tenor','redo','congas','bongo','timbal'];
+function golpe(t){[['bombo',1],['bombo',3],['bombo',2],['redo',2],['tenor',1],['congas',3],['bongo',2],['timbal',2]].forEach(([k,v])=>{if(instOn(k))INST[k].play(t,v)})}
+function arrangedStep(sb,step,t){
+  const a=arrAt(sb);
+  if(a.hit){golpe(t);return}
+  if(a.type==='after'||a.type==='rest')return;
+  if(a.type==='pulse'){if(Math.abs(sb-Math.round(sb))<1e-6&&instOn('timbal'))INST.timbal.play(t,3);return}
+  if(a.type==='fill'){const i=Math.round((sb-a.from)*4)%4, F=STYLES[styleAt(a.to)].fill;
+    for(const k of ALL){const v=F[k][i];if(v&&instOn(k))INST[k].play(t,v)}return}
+  if(a.type==='stoptime'){const r=sb-a.from, ev=a.every||2;if(Math.abs(r%ev)<1e-6)golpe(t);return}
+  const P=STYLES[styleAt(sb)][variantAt(sb)];
+  for(const k of ALL){if(a.type==='thin'&&!a.keep.includes(k))continue;const v=P[k][step];if(v&&instOn(k))INST[k].play(t,v)}
+}
+function instOn(k){const c=document.getElementById('inst-'+k);return !c||c.checked}
+// ===================== Reproducción (reloj en pulsos) =====================
+let playing=false, anchorTime=0, anchorP=0, nextIdx=0, cycle=0, loop=false, loopLen=0, rangeStart=0, rangeEnd=0, rangeBeat=0, percP=0, endP=0;
+let queue=[], queue2=[], next2=0, r2s=0, r2e=-1, cycle2=0, timer=null, raf=null, countMarks=[], lastEnd=0;
+let curSpb=.5;
+const spb=()=>curSpb;
+const pToTime=p=>anchorTime+(p-anchorP)*spb();
+const timeToP=t=>anchorP+(t-anchorTime)/spb();
+
+function play(fromIdx,withCount){
+  ensureCtx();
+  loop=$('loopLine').checked&&selLine!==null;
+  rangeStart=loop?lineStarts[selLine]:0;
+  rangeEnd=loop?(selLine+1<lineStarts.length?lineStarts[selLine+1]-1:events.length-1):events.length-1;
+  nextIdx=Math.min(Math.max(fromIdx,rangeStart),rangeEnd);cycle=0;
+  rangeBeat=events[rangeStart].beat;
+  const last=events[rangeEnd];loopLen=last.beat+last.d-rangeBeat;
+  const startP=events[nextIdx].beat;
+  const meter=song.sections[events[nextIdx].si].meter;
+  const pk=(Math.abs(startP-song.sections[events[nextIdx].si].startBeat)<1e-9&&song.sections[events[nextIdx].si].pickup)||0;
+  const countN=withCount&&$('countIn').checked?(meter===3?3:4)-pk:0;
+  anchorP=startP-countN;anchorTime=ctx.currentTime+.12;
+  countMarks=[];
+  for(let i=0;i<countN;i++){const t=pToTime(anchorP+i);if(!$('mute').checked)click(t,i%meter===0);countMarks.push({t,n:countN-i})}
+  percP=Math.ceil(startP*4-1e-9)/4;endP=loop?Infinity:last.beat+last.d;
+  r2s=events2.findIndex(e=>e.beat>=rangeBeat-1e-9);r2e=-1;
+  if(r2s>=0){for(let j=r2s;j<events2.length&&events2[j].beat<rangeBeat+loopLen-1e-9;j++)r2e=j}
+  next2=r2s<0?0:r2s;while(next2<=r2e&&events2[next2].beat<startP-1e-9)next2++;cycle2=0;queue2=[];
+  playing=true;queue=[];
+  $('play').textContent='❚❚ Pausa';$('status').textContent=loop?'Practicando la frase elegida en bucle.':'';
+  clearInterval(timer);timer=setInterval(schedule,25);schedule();
+  cancelAnimationFrame(raf);raf=requestAnimationFrame(draw);
+}
+function schedule(){
+  if(!playing)return;
+  const hP=timeToP(ctx.currentTime+.15);
+  for(;;){
+    if(nextIdx>rangeEnd){if(loop){cycle++;nextIdx=rangeStart}else break}
+    const e=events[nextIdx];const p=e.beat+cycle*loopLen;
+    if(p>=hP)break;
+    const t=pToTime(p);
+    if(!$('mute').checked&&voice()!=='2')bell(e.m,t,e.d*spb());
+    queue.push({i:nextIdx,t,end:t+e.d*spb()});nextIdx++;
+  }
+  if(r2s>=0&&r2e>=r2s)for(;;){
+    if(next2>r2e){if(loop){cycle2++;next2=r2s}else break}
+    const e=events2[next2];const p=e.beat+cycle2*loopLen;
+    if(p>=hP)break;
+    const t=pToTime(p);
+    if(!$('mute').checked&&voice()!=='1')bell(e.m,t,e.d*spb()*.9);
+    queue2.push({i:next2,t});next2++;
+  }
+  if(song.groove&&$('groove').checked){
+    while(percP<hP&&percP<endP-1e-9){
+      const sb=loop?rangeBeat+(((percP-rangeBeat)%loopLen)+loopLen)%loopLen:percP;
+      const sec=sectionAt(sb), rel=sb-sec.startBeat-(sec.pickup||0), L=STYLES[styleAt(sb)][variantAt(sb)].bombo.length, cyc=L/4;
+      arrangedStep(sb,Math.round((((rel%cyc)+cyc)%cyc)*4)%L,pToTime(percP));percP+=.25;
+    }
+  }else percP=Math.max(percP,Math.ceil(hP*4)/4);
+}
+function draw(){
+  if(!playing)return;
+  const now=ctx.currentTime;
+  const cm=countMarks.filter(c=>c.t<=now).pop();
+  if(cm&&(!queue.length||queue[0].t>now)&&now<pToTime(events[rangeStart].beat)){$('curNote').textContent=cm.n;$('secName').textContent='Preparados…'}
+  while(queue.length&&queue[0].t<=now){const q=queue.shift();setCurrent(q.i);lastEnd=q.end}
+  while(queue2.length&&queue2[0].t<=now){const q=queue2.shift();const e=events2[q.i];if(voice()!=='1')flash2(e.m);$('v2Note').textContent=e.name}
+  if(!loop&&nextIdx>rangeEnd&&!queue.length&&now>lastEnd){finish();return}
+  raf=requestAnimationFrame(draw);
+}
+function setCurrent(i){
+  const e=events[i];if(voice()!=='2')flash(e.m);
+  Object.values(barEls).forEach(b=>b.classList.remove('next'));
+  const n=i+1<=rangeEnd?events[i+1]:(loop?events[rangeStart]:null);
+  $('curNote').textContent=e.name;$('nxtNote').textContent=n?n.name:'–';
+  renderPhrase(e);
+  showArr(e.beat);
+}
+function showArr(b){
+  const el=$('arrTag');if(!song.groove||!$('groove').checked){el.hidden=true;return}
+  const a=arrAt(b);el.hidden=false;
+  const k=a.type==='after'?'end':a.type;const st=styleAt(b),S=STYLES[st];el.textContent=S.name+(st==='marcha'?'':' '+S.var[variantAt(b)].toLowerCase())+' · '+ARR_LABEL[k];el.dataset.k=k;
+}
+function renderPhrase(e){
+  const sec=song.sections[e.si], ln=sec.lines[e.li];
+  $('secName').textContent=sec.name+' · frase '+(e.li+1)+' de '+sec.lines.length;
+  $('lyric').textContent=ln.lyric;
+  const ch=$('chips');
+  if(ch.dataset.g!==String(e.g)){ch.dataset.g=e.g;ch.innerHTML=events.slice(lineStarts[e.g],lineStarts[e.g]+ln.notes.length).map(x=>`<span class="chip" style="--nc:${colorVar(x.m)}">${x.name}</span>`).join('')}
+  [...ch.children].forEach((c,j)=>{c.classList.toggle('on',j===e.ni);c.classList.toggle('past',j<e.ni)});
+  document.querySelectorAll('.row').forEach(r=>r.classList.toggle('cur',+r.dataset.g===e.g));
+}
+const voice=()=>{const v=document.getElementById('voiceSel');return events2.length&&v?v.value:'1'};
+function flash2(m){
+  const b=barEls[m];if(!b)return;
+  b.classList.remove('on2');void b.getBoundingClientRect();b.classList.add('on2');
+  clearTimeout(b._t2);b._t2=setTimeout(()=>b.classList.remove('on2'),Math.max(160,spb()*380));
+}
+function flash(m){
+  const b=barEls[m];if(!b)return;
+  b.classList.remove('on');void b.getBoundingClientRect();b.classList.add('on');
+  clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('on'),Math.max(160,spb()*380));
+}
+function stop(reset){
+  playing=false;clearInterval(timer);cancelAnimationFrame(raf);
+  if(ctx){const now=ctx.currentTime;live.forEach(({node,t})=>{if(t>now){try{node.stop()}catch(e){}}});live.length=0}
+  const pending=queue.length?queue[0].i:nextIdx;queue=[];queue2=[];
+  $('play').textContent='▶ Reproducir';
+  nextIdx=reset?0:(pending>rangeEnd?rangeStart:pending);
+  Object.values(barEls).forEach(b=>b.classList.remove('next'));
+}
+function finish(){stop(true);$('status').textContent='¡Terminó la pieza! Presione Reproducir para tocarla otra vez.';showIdle(true)}
+function showIdle(keep){
+  const e=events[0];
+  $('curNote').textContent='–';$('nxtNote').textContent=e.name;$('v2Note').textContent=events2.length?events2[0].name:'–';
+  Object.values(barEls).forEach(b=>b.classList.remove('next'));
+  if(!keep){$('secName').textContent='Listo · primera nota: '+e.name+(octWord(e.m)?' '+octWord(e.m):'');$('lyric').textContent=song.sections[0].lines[0].lyric}
+  const ch=$('chips');ch.dataset.g='';ch.innerHTML=events.slice(0,song.sections[0].lines[0].notes.length).map(x=>`<span class="chip" style="--nc:${colorVar(x.m)}">${x.name}</span>`).join('');
+  document.querySelectorAll('.row').forEach(r=>r.classList.remove('cur'));
+}
+function startAtLine(g){
+  selLine=g;stop(false);
+  document.querySelectorAll('.row').forEach(r=>r.classList.toggle('cur',+r.dataset.g===g));
+  play(lineStarts[g],true);
+}
+
+$('play').onclick=()=>{
+  if(playing){stop(false);$('status').textContent='En pausa. Presione Reproducir para seguir.';return}
+  const fresh=nextIdx===0||nextIdx>=events.length;
+  if(nextIdx>=events.length)nextIdx=0;
+  play(nextIdx,fresh);
+};
+$('restart').onclick=()=>{selLine=null;$('loopLine').checked=false;stop(true);play(0,true)};
+$('tempo').oninput=e=>{
+  if(playing&&ctx){const p=timeToP(ctx.currentTime);anchorP=p;anchorTime=ctx.currentTime} // re-anclar con el tempo anterior
+  curSpb=60/(+e.target.value);
+  $('tempoOut').textContent=e.target.value;
+};
+$('loopLine').onchange=()=>{if($('loopLine').checked&&selLine===null)$('status').textContent='Elija una frase en la partitura para repetirla.'};
+function fillVarSel(){const S=STYLES[curStyle],sel=$('varSel');sel.innerHTML=`<option value="auto">Según la sección</option><option value="A">Solo ${S.var.A}</option><option value="B">Solo ${S.var.B}</option>`;sel.value=varMode;sel.disabled=curStyle==='marcha'}
+$('styleSel').onchange=e=>{curStyle=e.target.value;varMode='auto';fillVarSel();$('status').textContent='Ritmo: '+STYLES[curStyle].name+'.'};
+$('varSel').onchange=e=>{varMode=e.target.value};
+$('keyUp').onclick=()=>changeKey(1);$('keyDown').onclick=()=>changeKey(-1);
+$('keyReset').onclick=()=>{stop(true);userShift=0;try{localStorage.removeItem('lira-shift-'+song.id)}catch(e){};$('status').textContent='Tono original.';rebuild()};
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&e.target===document.body){e.preventDefault();$('play').click()}});
+
+{const keep=['popurri', 'navidad'];const k=SONGS.filter(x=>keep.includes(x.id));SONGS.length=0;SONGS.push(...k)}
+build();
+let start=0;try{const s=localStorage.getItem('lira-song-lira-navidena');const i=SONGS.findIndex(x=>x.id===s);if(i>=0)start=i}catch(e){}
+selectSong(start);
+</script>
+</body>
+</html>
