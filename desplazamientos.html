@@ -1,0 +1,1750 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b2550">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Desplazamientos">
+<style>html,body{margin:0}body{-webkit-text-size-adjust:100%}</style>
+<title>Desplazamientos Banda Rítmica</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: app de una columna para celular — barra superior, canción y lugar, tarjeta "qué hago ahora", escenario oscuro, hoja de ruta; transporte fijo abajo */
+:root{
+  --bg:#eef0f4; --surface:#ffffff; --sunk:#e6e9f0; --ink:#141a2e; --muted:#5a6377; --line:#d6dbe4;
+  --navy:#1b2550; --on-navy:#ffffff; --gold:#c8961e; --gold-ink:#7a5a0c; --gold-soft:#f6ecd2;
+  --warn:#b3261e; --warn-soft:#fbe3e0; --ok:#2e7d4f;
+  --stage:#121a33; --stage-ink:#f6ecd2; --stage-accent:#f0c050;
+  --shadow:0 1px 2px rgba(20,26,46,.06),0 10px 28px rgba(20,26,46,.08);
+  --display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0c1120; --surface:#151c31; --sunk:#10162a; --ink:#eef0f6; --muted:#9aa3b8; --line:#263152;
+  --navy:#b4c2f5; --on-navy:#0c1120; --gold:#e9b949; --gold-ink:#f3cd6e; --gold-soft:#2f2814;
+  --warn:#ff8a80; --warn-soft:#3d1f1d; --ok:#7fd3a0; --stage:#0a0f1e;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1120; --surface:#151c31; --sunk:#10162a; --ink:#eef0f6; --muted:#9aa3b8; --line:#263152;
+  --navy:#b4c2f5; --on-navy:#0c1120; --gold:#e9b949; --gold-ink:#f3cd6e; --gold-soft:#2f2814;
+  --warn:#ff8a80; --warn-soft:#3d1f1d; --ok:#7fd3a0; --stage:#0a0f1e;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35); color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-size:16px;line-height:1.45}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.app{max-width:760px;margin:0 auto;padding:6px 16px calc(116px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+
+/* ---- barra fija con menús desplegables ---- */
+.barwrap{position:sticky;top:env(safe-area-inset-top,0px);z-index:35;background:var(--bg);padding:10px 16px 8px}
+.topbar{max-width:728px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;gap:8px}
+.pick{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;min-width:0;min-height:54px;padding:6px 30px 6px 12px;border-radius:14px;border-color:transparent;background:var(--surface);box-shadow:var(--shadow);line-height:1.15}
+.pick::after{content:"";position:absolute;right:12px;top:50%;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .15s}
+.pick[aria-expanded="true"]::after{transform:translateY(-30%) rotate(-135deg)}
+.pick .k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-ink)}
+.pick b{font-size:16px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick[aria-expanded="true"],.menu-btn[aria-expanded="true"]{background:var(--navy);color:var(--on-navy)}
+.pick[aria-expanded="true"] .k{color:var(--on-navy);opacity:.75}
+.pick[aria-expanded="true"]::after{border-color:var(--on-navy)}
+.menu-btn{width:54px;height:54px;min-height:54px;padding:0;display:grid;place-items:center;border-radius:14px;border-color:transparent;background:var(--surface);box-shadow:var(--shadow)}
+.menu-btn svg{width:24px;height:24px}
+.sheet{position:absolute;left:50%;transform:translateX(-50%);top:calc(100% - 2px);width:min(728px,calc(100% - 32px));max-height:min(72vh,640px);overflow:auto;background:var(--surface);border-radius:20px;box-shadow:0 18px 50px rgba(10,15,30,.28);padding:16px;display:flex;flex-direction:column;gap:12px;z-index:36}
+.sheet .canciones{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));overflow:visible}
+.sheet .canciones button{box-shadow:none;background:var(--sunk)}
+.sheet .canciones button[aria-selected="true"]{background:var(--navy)}
+.sheet-title{font-family:var(--display);font-weight:800;font-size:26px;line-height:1}
+.backdrop{position:fixed;inset:0;z-index:34;background:rgba(10,15,30,.35)}
+.nombres{display:flex;flex-direction:column;gap:12px}
+.ng{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.ng i{width:10px;height:10px;border-radius:50%}
+.nbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px}
+.nbtns button{min-height:44px;padding:6px 10px;font-size:14px;text-align:left;display:flex;flex-direction:column;justify-content:center;line-height:1.15;border-radius:12px}
+.nbtns button small{font-weight:400;font-size:11px;color:var(--muted)}
+.nbtns button[aria-pressed="true"] small{color:var(--gold-ink)}
+.wide{width:100%}
+.msec{display:flex;flex-direction:column;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.msec:last-child{border-bottom:0;padding-bottom:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button,.chips .filebtn{min-height:40px;padding:6px 12px;font-size:14px;border-radius:999px}
+.pasos{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.ruta summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:28px}
+.ruta summary::-webkit-details-marker{display:none}
+.ruta .chev{color:var(--muted);transition:transform .15s}
+.ruta[open] .chev{transform:rotate(180deg)}
+.ruta[open] summary{margin-bottom:8px}
+
+/* ---- nueva canción ---- */
+.cancion-acc{display:flex;gap:8px;flex-wrap:wrap}
+.cancion-acc button{flex:1;min-width:150px}
+.wiz{position:fixed;inset:0;z-index:60;background:rgba(10,15,30,.55);display:flex;align-items:flex-start;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px 12px;overflow:auto}
+.wiz-card{background:var(--surface);border-radius:22px;width:min(560px,100%);padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+.wiz-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wiz-steps{display:flex;gap:6px}
+.wiz-steps i{width:28px;height:6px;border-radius:3px;background:var(--sunk)}
+.wiz-steps i.on{background:var(--gold)}
+.wiz h3{font-family:var(--display);font-weight:800;font-size:30px;line-height:1;margin:0}
+.wiz .sub{font-size:14px;color:var(--muted);margin-top:-6px}
+.wiz label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
+.wiz input.big{font-size:20px;font-weight:700;min-height:52px}
+.segm{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--sunk);border-radius:12px;padding:4px}
+.segm button{border:0;background:none;min-height:46px;border-radius:9px;font-size:16px;color:var(--muted)}
+.segm button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:44px;height:44px;min-height:44px;padding:0;border-radius:12px;font-size:20px}
+.stepper output{min-width:56px;text-align:center;font-family:var(--display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums}
+.plantillas{display:flex;flex-wrap:wrap;gap:6px}
+.plantillas button{min-height:38px;font-size:13px;border-radius:999px;padding:6px 12px}
+.bloques{display:flex;flex-direction:column;gap:6px}
+.bloque{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:8px;align-items:center;background:var(--sunk);border-radius:14px;padding:8px 8px 8px 12px}
+.bloque .n{font-family:var(--display);font-weight:800;font-size:20px;color:var(--gold-ink)}
+.bloque select{min-height:44px}
+.bloque .stepper button{width:38px;height:38px;min-height:38px}
+.bloque .stepper output{min-width:40px;font-size:22px}
+.bloque .x{width:36px;height:36px;min-height:36px;padding:0;border-radius:50%;border-color:transparent;background:none;color:var(--muted)}
+.bloque small{display:block;font-size:11px;color:var(--muted);text-align:center;margin-top:-2px}
+.addb{display:flex;flex-wrap:wrap;gap:6px}
+.addb button{min-height:40px;font-size:14px;border-radius:999px;padding:6px 12px}
+.resumen{display:flex;gap:16px;flex-wrap:wrap;background:var(--gold-soft);color:var(--gold-ink);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:700}
+.resumen b{font-family:var(--display);font-size:24px;margin-right:4px}
+.opc{display:flex;flex-direction:column;gap:8px}
+.opc button{text-align:left;display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:14px;font-size:16px}
+.opc button small{font-weight:400;font-size:13px;color:var(--muted)}
+.opc button[aria-pressed="true"] small{color:var(--gold-ink)}
+.wiz-nav{display:flex;gap:8px;justify-content:space-between}
+.wiz-nav button{min-height:50px;flex:1;font-size:16px}
+.wiz .err{color:var(--warn);font-size:14px;font-weight:700}
+
+/* ---- integrantes ---- */
+.cq-fr{text-align:center;font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--muted)}
+.cq{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.cq button{min-height:46px;padding:4px 5px;border-radius:9px;font-size:11.5px;line-height:1.1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;min-width:0;border:1.5px solid transparent;background:var(--sunk);border-left:4px solid var(--c)}
+.cq button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.cq button small{font-size:10px;font-weight:400;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.cq button.vacio{background:none;border:1.5px dashed var(--line);border-left:1.5px dashed var(--line);color:var(--muted);font-weight:400}
+.cq button.fijo{border-radius:3px}
+.cq button.sel{border-color:var(--gold);background:var(--gold-soft);border-left:4px solid var(--c)}
+.cq-row-l{grid-column:1/-1;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+.cq-edit{background:var(--sunk);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.cq-edit .two{display:flex;gap:8px;flex-wrap:wrap}.cq-edit .two button{flex:1;min-width:140px}
+.cq-msg{font-size:14px;font-weight:700;color:var(--gold-ink)}
+
+/* ---- barra superior (anterior) ---- */
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.brand{min-width:0;display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-ink);font-weight:700}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8vw,42px);line-height:.95;margin:0;color:var(--ink);text-wrap:balance;letter-spacing:.005em}
+h2{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1;margin:0;color:var(--ink)}
+.meta{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;margin-top:4px}
+.tag{display:inline-block;background:var(--gold-soft);color:var(--gold-ink);border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px;vertical-align:1px}
+.rol{display:flex;flex:none;background:var(--sunk);border-radius:999px;padding:3px;gap:2px}
+.rol button{border:0;border-radius:999px;min-height:36px;padding:6px 12px;background:none;font-size:13px;color:var(--muted)}
+.rol button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* ---- canción y lugar ---- */
+.canciones{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(148px,1fr);gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.canciones::-webkit-scrollbar{display:none}
+.canciones button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:10px 12px;min-height:58px;font-size:15px;line-height:1.15;border-radius:14px;border-color:transparent;background:var(--surface);box-shadow:var(--shadow)}
+.canciones button small{font-weight:400;font-size:11px;color:var(--muted)}
+.canciones button[aria-selected="true"]{background:var(--navy);color:var(--on-navy)}
+.canciones button[aria-selected="true"] small{color:var(--on-navy);opacity:.75}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--sunk);border-radius:14px;padding:4px}
+.tabs button{border:0;border-radius:11px;min-height:48px;background:none;display:flex;align-items:center;justify-content:center;gap:8px;padding:6px 8px;font-size:14px;color:var(--muted);line-height:1.1}
+.tabs button svg{width:22px;height:22px;flex:none}
+.tabs button small{display:none}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* ---- quién soy ---- */
+.quien{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.quien label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.hint{font-size:12px;color:var(--muted)}
+
+/* ---- tarjeta "ahora" ---- */
+.now{background:var(--surface);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.nh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px}
+.nh .who{font-weight:700}
+.nh .part{color:var(--muted)}
+.nh .beat{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;color:var(--muted);font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:2px 10px 2px 6px;font-size:12px;font-weight:700;background:var(--sunk)}
+.pill i{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.pill.fijo i{border-radius:2px}
+.mov{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.pict{width:120px;height:120px;border-radius:24px;background:var(--stage);color:var(--stage-accent);display:grid;place-items:center;position:relative;flex:none}
+.pict svg{width:96px;height:96px}
+.pict .fr{position:absolute;top:6px;left:0;right:0;text-align:center;font-size:9px;letter-spacing:.14em;font-weight:700;color:var(--stage-ink);opacity:.6}
+.mtxt{min-width:0;display:flex;flex-direction:column;gap:2px}
+.big{font-family:var(--display);font-weight:800;font-size:clamp(40px,11vw,56px);line-height:.9;color:var(--ink)}
+.big b{color:var(--gold-ink);font-weight:800}
+.dir{font-family:var(--display);font-weight:700;font-size:clamp(22px,6vw,28px);line-height:1.05;color:var(--ink);text-wrap:balance}
+.how{font-size:14px;color:var(--muted);margin-top:4px}
+.beats{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:4px}
+.bt{height:42px;border-radius:9px;background:var(--sunk);display:grid;place-items:center;position:relative;font-size:20px;font-weight:700;color:var(--muted)}
+.bt i{position:absolute;top:2px;left:5px;font-style:normal;font-size:9px;font-weight:700;opacity:.7}
+.bt.p{color:var(--ink)}
+.bt.done{opacity:.4}
+.bt.on{background:var(--navy);color:var(--on-navy);transform:scale(1.06)}
+.with{font-size:13px;color:var(--muted)}
+.next{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:12px;font-size:14px}
+.next .cd{flex:none;font-weight:700;color:var(--gold-ink);font-variant-numeric:tabular-nums}
+.next .mini{width:34px;height:34px;border-radius:10px;background:var(--stage);color:var(--stage-accent);display:grid;place-items:center;flex:none}
+.next .mini svg{width:26px;height:26px}
+.next .nt{min-width:0}
+.grp{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:14px;align-items:baseline}
+.grp b{white-space:nowrap}
+.bar{height:5px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold);width:0}
+
+/* ---- escenario ---- */
+.stage{background:var(--stage);border-radius:22px;overflow:hidden;box-shadow:var(--shadow)}
+.stage-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;flex-wrap:wrap}
+.vista{display:flex;background:rgba(255,255,255,.08);border-radius:999px;padding:3px;gap:2px}
+.vista button{border:0;border-radius:999px;min-height:34px;padding:4px 12px;background:none;color:#c9cfe0;font-size:13px}
+.vista button[aria-pressed="true"]{background:var(--stage-accent);color:#1b1608}
+.stage-head .sec{color:var(--stage-ink);font-size:13px;font-weight:700;opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.view-box{position:relative;background:#2f6b5a}
+body.editing .view-box{position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+canvas{display:block;width:100%;height:auto;cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:18px;height:4px;border-radius:2px}
+.legend i.d{width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 1.5px var(--line)}
+
+/* ---- en vivo ---- */
+.vivo{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:18px;padding:10px 12px 10px 16px;box-shadow:var(--shadow)}
+.vivo .dot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex:none}
+.vivo.on .dot{background:#2fbf71;box-shadow:0 0 0 5px rgba(47,191,113,.2)}
+.vivo .vt{display:flex;flex-direction:column;min-width:0;flex:1;font-size:13px;color:var(--muted);line-height:1.3}
+.vivo .vt b{color:var(--ink);font-size:15px}
+.vivo button{flex:none;min-height:40px;font-size:14px;border-radius:999px}
+/* ---- cuenta de 4 ---- */
+.cuenta-in{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:40;width:min(58vw,240px);aspect-ratio:1;border-radius:50%;background:rgba(10,15,30,.88);color:#f6ecd2;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.cuenta-in b{font-family:var(--display);font-weight:800;font-size:clamp(90px,30vw,150px);line-height:.85;color:#f0c050}
+.cuenta-in span{font-size:14px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;opacity:.8}
+
+/* ---- práctica ---- */
+.practica{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.practica::-webkit-scrollbar{display:none}
+.practica button,.practica .filebtn{flex:none;min-height:38px;padding:6px 12px;font-size:13px;border-radius:999px}
+.widths{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.widths button{min-height:36px;padding:6px 12px;font-size:13px;border-radius:999px}
+.alert{background:var(--warn-soft);color:var(--warn);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:700;display:flex;flex-direction:column;gap:2px}
+.alert button{align-self:flex-start;min-height:32px;padding:4px 10px;font-size:13px;margin-top:4px}
+
+/* ---- controles generales ---- */
+button,.filebtn{font:inherit;font-weight:700;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 14px;cursor:pointer;min-height:44px;position:relative}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,.filebtn:focus-within,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button.primary{background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+button[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft);color:var(--gold-ink)}
+.filebtn input{position:absolute;opacity:0;width:1px;height:1px}
+select,input[type=text],input[type=number]{font:inherit;font-size:15px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 10px;min-height:44px;width:100%;min-width:0}
+.label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.note{font-size:12px;color:var(--muted)}
+
+/* ---- transporte fijo ---- */
+.transport{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(20,26,46,.08)}
+.tp{max-width:728px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.tl-wrap{position:relative}
+.timeline{display:flex;height:30px;border-radius:8px;overflow:hidden;background:var(--sunk);position:relative}
+.seg{border:0;border-right:1px solid var(--line);border-radius:0;font-size:10px;padding:2px 4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted);display:flex;align-items:center;min-width:0;background:none;min-height:0;font-weight:400}
+.seg.on{background:var(--gold-soft);color:var(--gold-ink);font-weight:700}
+.playhead{position:absolute;top:0;bottom:0;width:3px;margin-left:-1px;background:var(--gold);border-radius:2px;pointer-events:none}
+#scrub{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer}
+.tp-row{display:flex;align-items:center;gap:10px}
+.playbtn{width:52px;height:52px;min-height:52px;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--navy);border-color:var(--navy);color:var(--on-navy)}
+.playbtn svg,.iconbtn svg{width:22px;height:22px}
+.iconbtn{width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center}
+.clock{display:flex;flex-direction:column;min-width:0;line-height:1.1}
+.clock .big2{font-family:var(--display);font-weight:800;font-size:24px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.clock .sec2{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---- hoja de ruta ---- */
+.ruta{background:var(--surface);border-radius:22px;padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+ol.guide{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+ol.guide li{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:8px 10px;border-radius:14px;cursor:pointer;align-items:center}
+ol.guide li:hover{background:var(--sunk)}
+ol.guide li.on{background:var(--gold-soft)}
+ol.guide .gi{width:40px;height:40px;border-radius:12px;background:var(--stage);color:var(--stage-accent);display:grid;place-items:center}
+ol.guide .gi svg{width:30px;height:30px}
+ol.guide .gi.n{font-family:var(--display);font-weight:800;font-size:18px;color:var(--stage-ink)}
+ol.guide .gw{min-width:0;font-size:15px}
+ol.guide .gw small{display:block;color:var(--muted);font-size:12px}
+ol.guide .gw .g2{display:block;font-size:13px}
+
+/* ---- editor ---- */
+.edit-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.editor{background:var(--surface);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.editor .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.status{font-size:13px;font-weight:700;color:var(--muted)}
+.status.dirty{color:var(--warn)} .status.ok{color:var(--ok)}
+.fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+.fields label,.pf label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:700;min-width:0}
+details.part{background:var(--sunk);border-radius:14px;border:1.5px solid transparent}
+details.part[open]{border-color:var(--gold);background:var(--surface)}
+details.part summary{cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:baseline;list-style:none}
+details.part summary::-webkit-details-marker{display:none}
+details.part summary .n{font-family:var(--display);font-size:22px;color:var(--gold-ink);min-width:22px}
+details.part summary .t{font-weight:700;flex:1;min-width:0}
+details.part summary .c{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.pbody{padding:0 14px 14px;display:flex;flex-direction:column;gap:12px}
+.pf{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end}
+.check{flex-direction:row!important;align-items:center;gap:8px!important;font-size:14px!important;color:var(--ink)!important;min-height:44px}
+.check input{width:20px;height:20px;accent-color:var(--gold)}
+.acts{display:flex;flex-direction:column;gap:8px}
+.act{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px;border-radius:10px;background:var(--sunk);position:relative}
+.act .mv{grid-column:1 / span 2}
+.act .del{position:absolute;top:-8px;right:-8px;min-height:30px;width:30px;padding:0;border-radius:50%;font-size:14px}
+.act .lead{grid-column:1/-1;font-size:12px;color:var(--muted);font-weight:700}
+.act select,.act input{min-height:40px;font-size:14px;padding:6px 8px}
+.rowbtns{display:flex;gap:6px;flex-wrap:wrap}
+.rowbtns button{min-height:38px;padding:6px 10px;font-size:14px}
+.patrones{display:grid;grid-template-columns:1fr auto;gap:6px}
+body.est .solo-general{display:none!important}
+@media (max-width:480px){
+  .fields{grid-template-columns:1fr 1fr}.fields label:first-child{grid-column:1/-1}
+  .pf{grid-template-columns:1fr 1fr}.pf label:first-child{grid-column:1/-1}
+  .pict{width:96px;height:96px;border-radius:20px}.pict svg{width:76px;height:76px}
+  .tabs button{flex-direction:column;gap:2px;font-size:12px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.bt.on{transform:none}}
+</style>
+</head>
+<body>
+
+
+<div class="barwrap" id="barwrap">
+  <header class="topbar">
+    <button class="pick" id="pickShow" data-sheet="sheetShow" aria-expanded="false">
+      <span class="k" id="lugarTxt">Cancha</span><b id="title">Canción</b>
+    </button>
+    <button class="pick" id="pickQuien" data-sheet="sheetQuien" aria-expanded="false">
+      <span class="k" id="quienK">Estudiante</span><b id="quienTxt">Toque aquí</b>
+    </button>
+    <button class="menu-btn" id="menuBtn" data-sheet="sheetMenu" aria-expanded="false" aria-label="Menú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </header>
+
+  <div class="sheet" id="sheetShow" hidden>
+    <div class="label">Canción</div>
+    <div class="canciones" id="canciones" role="tablist" aria-label="Canción"></div>
+    <div class="cancion-acc solo-general" id="cancionAcc" hidden>
+      <button id="nuevaBtn" class="primary">＋ Nueva canción</button>
+      <button id="borrarBtn" hidden>Eliminar esta canción</button>
+    </div>
+    <div class="label">Lugar</div>
+    <div class="tabs" role="tablist" aria-label="Lugar del show">
+      <button role="tab" id="tab-campo" data-mode="campo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="5" width="19" height="14" rx="1.5"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/></svg>Cancha</button>
+      <button role="tab" id="tab-fija" data-mode="fija"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2.5v19M18 2.5v19"/><path d="M12 3v3M12 9v3M12 15v3" stroke-linecap="round"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/></svg>Calle fija</button>
+      <button role="tab" id="tab-calle" data-mode="calle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2.5v19M18 2.5v19"/><path d="M12 18V6M8.5 9.5 12 6l3.5 3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Desfile</button>
+    </div>
+    <div class="meta" id="meta"></div>
+  </div>
+
+  <div class="sheet" id="sheetQuien" hidden>
+    <div class="sheet-title" id="quienTitulo">Toque su nombre</div>
+    <div class="nombres" id="nombres"></div>
+    <button id="verTodos" class="solo-general wide" aria-pressed="false">Ver a toda la banda</button>
+    <select id="selN" hidden aria-hidden="true" tabindex="-1"></select>
+  </div>
+
+  <div class="sheet" id="sheetMenu" hidden>
+    <div class="msec" id="rolBox" hidden>
+      <div class="label">Modo</div>
+      <div class="rol" role="tablist" aria-label="Sección">
+        <button role="tab" data-rol="general">Director</button>
+        <button role="tab" data-rol="estudiante">Vista de estudiante</button>
+      </div>
+    </div>
+    <div class="msec">
+      <div class="label">Práctica</div>
+      <div class="chips">
+        <button id="cuentaBtn" aria-pressed="true">Cuenta de 4</button>
+        <button id="metro" aria-pressed="true">Metrónomo</button>
+        <button id="musBtn" aria-pressed="true" hidden>♪ Melodía de lira</button>
+        <button id="slow" aria-pressed="false">Lento ½</button>
+        <button id="loopBtn" aria-pressed="false">↻ Repetir la parte</button>
+        <label class="filebtn">♫ Cargar grabación<input type="file" id="song" accept="audio/*"></label>
+        <button id="ahorroBtn" aria-pressed="false">Ahorro de batería</button>
+      </div>
+      <span class="note">Mientras suena el show, la pantalla se mantiene encendida.</span>
+      <div class="note" id="songnote"></div>
+    </div>
+    <div class="msec">
+      <div class="label">Hoja de ruta en PDF</div>
+      <button id="pdfBtn" class="wide">⬇ Descargar mi hoja de ruta</button>
+      <button id="pdfTodosBtn" class="wide solo-general" hidden>⬇ Hojas de toda la banda (una página por estudiante)</button>
+      <span class="note" id="pdfNote">Para imprimir o tenerla sin internet: sus pasos, flechas y tiempos de la canción y el lugar elegidos.</span>
+    </div>
+    <div class="msec solo-general">
+      <div class="label">Coreografía</div>
+      <div class="widths" id="widths" hidden>
+        <span class="note">Ancho de calle</span>
+        <button data-w="6">6 m</button>
+        <button data-w="7">7 m</button>
+        <button data-w="9">9 m</button>
+      </div>
+      <button id="croqBtn" class="wide" hidden>Integrantes y suplentes</button>
+      <div class="edit-bar" id="editBar" hidden>
+        <button id="editToggle" class="wide" aria-pressed="false">✎ Editar coreografía</button>
+        <span class="note" id="editNote">Los cambios se guardan para todos con «Guardar para todos».</span>
+      </div>
+    </div>
+    <div class="msec">
+      <div class="label">Colores de la animación</div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="msec">
+      <div class="label">Cómo se usa</div>
+      <ol class="pasos">
+        <li>Toque su nombre arriba (solo la primera vez).</li>
+        <li>Toque ▶: suena la cuenta de 4 y empieza.</li>
+        <li>Siga la flecha y la tira de tiempos: ← es un paso, · es marcar en su lugar. La flecha se lee mirando al frente.</li>
+      </ol>
+      <p class="note" id="foot"></p>
+    </div>
+  </div>
+</div>
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="wiz" id="croq" hidden role="dialog" aria-modal="true" aria-label="Integrantes y suplentes"><div class="wiz-card" id="croqCard"></div></div>
+<div class="wiz" id="wiz" hidden role="dialog" aria-modal="true" aria-label="Nueva canción"><div class="wiz-card" id="wizCard"></div></div>
+
+<div class="app">
+  <div class="vivo" id="vivo" hidden>
+    <span class="dot" id="vivoDot"></span>
+    <div class="vt"><b id="vivoTit">En vivo</b><span id="vivoTxt"></span></div>
+    <button id="vivoBtn" aria-pressed="false"></button>
+  </div>
+
+  <section class="now" id="now" aria-live="polite"></section>
+
+  <section class="stage">
+    <div class="stage-head">
+      <div class="vista" id="vistaBox">
+        <button data-v="yo">Mi recorrido</button>
+        <button data-v="banda">Toda la banda</button>
+      </div>
+      <span class="sec" id="secname"></span>
+    </div>
+    <div class="view-box"><canvas id="view" aria-label="Vista con la posición de cada integrante."></canvas></div>
+  </section>
+
+  <div class="alert solo-general" id="alert" hidden></div>
+  <section class="editor solo-general" id="editor" hidden></section>
+
+  <details class="ruta" id="rutaBox">
+    <summary><span class="label" id="guidelabel">Hoja de ruta</span><span class="chev">▾</span></summary>
+    <ol class="guide" id="guide"></ol>
+  </details>
+  <span id="puestoHint" hidden></span><span id="eyebrow" hidden></span><span id="quienLbl" hidden> </span>
+</div>
+
+<div class="cuenta-in" id="cuentaIn" hidden aria-live="assertive"><b id="cuentaNum">1</b><span>Prepárese</span></div>
+
+<div class="transport">
+  <div class="tp">
+    <div class="tl-wrap">
+      <div class="timeline" id="timeline"><div class="playhead" id="playhead"></div></div>
+      <input type="range" id="scrub" min="0" step="0.01" value="0" aria-label="Mover a un tiempo del show">
+    </div>
+    <div class="tp-row">
+      <button class="iconbtn" id="restart" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM19 5v14L9 12z"/></svg></button>
+      <button class="playbtn" id="play" aria-label="Reproducir"></button>
+      <div class="clock"><span class="big2" id="clock">Compás 1 · tiempo 1</span><span class="sec2" id="clockSec"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================
+     CONFIGURACIÓN — pegue aquí los datos de su proyecto de Firebase
+     (Firebase → Configuración del proyecto → Sus apps → Web → firebaseConfig)
+     y pegue el UID del usuario director (Firebase → Authentication → Usuarios).
+     =================================================================== -->
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "banda-cjdv.firebaseapp.com",
+  databaseURL: "https://banda-cjdv-default-rtdb.firebaseio.com",
+  projectId: "banda-cjdv",
+  storageBucket: "banda-cjdv.firebasestorage.app",
+  messagingSenderId: "328330972914",
+  appId: "1:328330972914:web:1024e8918605146ebbca6b"
+};
+const UID_DIRECTOR = "TagcUtbVcZcuLmRYR5vTeOpV3Xz2";
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+/* ===== Conexión de la app con Firebase (base de datos, director, ensayo en vivo, descargas) ===== */
+(function(){
+  const conFirebase = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL && window.firebase);
+  let fdb=null, auth=null, offset=0, usuario=null;
+  const authListo = new Promise(res=>{
+    if(!conFirebase){res(null);return}
+    try{
+      firebase.initializeApp(FIREBASE_CONFIG);
+      fdb=firebase.database(); auth=firebase.auth();
+      fdb.ref(".info/serverTimeOffset").on("value",s=>{offset=s.val()||0});
+      let primero=true;
+      auth.onAuthStateChanged(u=>{usuario=u;if(primero){primero=false;res(u)}else location.reload()});
+    }catch(e){console.error(e);res(null)}
+  });
+  const esDirector=()=>!conFirebase||(!!usuario&&usuario.uid===UID_DIRECTOR.trim());
+  const ahora=()=>Date.now()+offset;
+  const MI_ID=Math.random().toString(36).slice(2,10);
+
+  // --- base de datos: cada documento se guarda como texto JSON (evita que Firebase cambie listas) ---
+  function snapDe(v){return {exists:!!(v&&v.json),data:()=>v&&v.json?JSON.parse(v.json):undefined,metadata:{hasPendingWrites:false}}}
+  const dbAPI={doc(path){const ref=fdb.ref(path);return {
+    set:obj=>ref.set({json:JSON.stringify(obj),t:firebase.database.ServerValue.TIMESTAMP}),
+    get:async()=>snapDe((await ref.get()).val()),
+    delete:()=>ref.remove(),
+    onSnapshot:(next,err)=>{const cb=s=>{try{next(snapDe(s.val()))}catch(e){console.error(e)}};ref.on("value",cb,e=>err&&err(e));return()=>ref.off("value",cb)}
+  }}};
+
+  // --- ensayo en vivo: el director escribe una orden; todos la reciben y arrancan a la misma hora del servidor ---
+  let conectado=false, ultimo=null;
+  const roomAPI={
+    connected:()=>conectado,
+    emit:(topic,data)=>fdb.ref("vivo").set({...data,from:MI_ID,seq:Math.random().toString(36).slice(2),at:firebase.database.ServerValue.TIMESTAMP}),
+    on:(topic,h)=>{let primero=true;
+      fdb.ref("vivo").on("value",s=>{const v=s.val();if(!v||!v.seq)return;
+        const viejo=primero&&ahora()-(v.at||0)>4000;primero=false;if(viejo||v.seq===ultimo)return;ultimo=v.seq;
+        const msg={data:v,sameTab:v.from===MI_ID,isMe:v.from===MI_ID};
+        if(v.a==="play"){const espera=(v.at||ahora())+1200-ahora();setTimeout(()=>h(msg),Math.max(0,espera))}else h(msg)});
+      return()=>{}},
+    onPeers:(h)=>{fdb.ref("presencia").on("value",s=>h({peers:Array(s.numChildren()).fill(0)}));return()=>{}},
+    onConnection:(h)=>{fdb.ref(".info/connected").on("value",s=>{conectado=!!s.val();
+      if(conectado){const r=fdb.ref("presencia/"+MI_ID);r.onDisconnect().remove();r.set(true)}h(conectado)});return()=>{}}
+  };
+
+  // --- descargas: el PDF se baja directo al teléfono o la computadora ---
+  const dlAPI={save:async({filename,data})=>{const url=URL.createObjectURL(new Blob([data],{type:"application/pdf"}));
+    const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);return {status:"saved"}}};
+
+  window.claude={use:async(nombre)=>{
+    await authListo;
+    if(nombre==="user")return {canEdit:async()=>esDirector(),isOwner:async()=>esDirector()};
+    if(nombre==="db")return conFirebase?dbAPI:null;
+    if(nombre==="room")return conFirebase?roomAPI:null;
+    if(nombre==="downloads")return dlAPI;
+    return null;
+  }};
+
+  // --- menú: acceso del director ---
+  document.addEventListener("DOMContentLoaded",()=>{
+    const menu=document.getElementById("sheetMenu");if(!menu)return;
+    const sec=document.createElement("div");sec.className="msec";
+    menu.insertBefore(sec,menu.firstChild);
+    const pintar=()=>{
+      if(!conFirebase){sec.innerHTML=`<div class="label">Director</div><span class="note">Falta pegar la configuración de Firebase en el archivo. Mientras tanto la app funciona en este aparato, sin guardar para todos ni ensayo en vivo.</span>`;return}
+      if(usuario){sec.innerHTML=`<div class="label">Director</div><span class="note">Sesión iniciada: ${usuario.email}${esDirector()?"":" (esta cuenta no es la del director: revise el UID en el archivo)"}</span><button class="wide" id="salirDir">Cerrar sesión</button>`;
+        document.getElementById("salirDir").onclick=()=>auth.signOut();return}
+      sec.innerHTML=`<div class="label">Director</div>
+        <form id="formDir" style="display:flex;flex-direction:column;gap:6px">
+          <input type="email" id="dirMail" placeholder="Correo del director" autocomplete="username" required>
+          <input type="password" id="dirPass" placeholder="Contraseña" autocomplete="current-password" required>
+          <button class="primary wide" type="submit">Entrar como director</button>
+          <span class="note" id="dirMsg">Solo para el director. Los estudiantes no necesitan entrar.</span>
+        </form>`;
+      document.getElementById("formDir").onsubmit=async e=>{e.preventDefault();const m=document.getElementById("dirMsg");m.textContent="Entrando…";
+        try{await auth.signInWithEmailAndPassword(document.getElementById("dirMail").value.trim(),document.getElementById("dirPass").value)}
+        catch(err){m.textContent="Correo o contraseña incorrectos."}};
+    };
+    authListo.then(pintar);pintar();
+  });
+
+  // --- piezas de la página de la lira (mismo sitio): se agregan solas ---
+  window.addEventListener("load",()=>{
+    const f=document.createElement("iframe");f.style.cssText="position:absolute;width:1px;height:1px;opacity:0;border:0;left:-9999px";f.src="index.html";f.setAttribute("aria-hidden","true");f.tabIndex=-1;
+    f.onload=()=>{try{
+      const w=f.contentWindow, SONGS=w.eval("typeof SONGS!=='undefined'?SONGS:null"), toMidi=w.eval("typeof toMidi!=='undefined'?toMidi:null");
+      if(!Array.isArray(SONGS)||!toMidi){f.remove();return}
+      const tipoDe=n=>/coro|estribillo/i.test(n)?"Coro":/estrofa/i.test(n)?"Estrofa":/intro/i.test(n)?"Intro":/final/i.test(n)?"Final":/puente/i.test(n)?"Puente":"Estrofa";
+      SONGS.forEach(sg=>{if(!sg||sg.id==="popurri"||sg.id==="navidad")return;
+        const id="l-"+String(sg.id).toLowerCase().replace(/[^a-z0-9]/g,"");if(CANCIONES.some(c=>c.id===id))return;
+        const ev=[],bloques=[];let b=0;
+        (sg.sections||[]).forEach(sec=>{const ini=b,meter=+sec.meter||4;
+          (sec.lines||[]).forEach(ln=>(ln.notes||[]).forEach((n,i)=>{const d=+ln.durs[i]||0;ev.push([+b.toFixed(3),toMidi(n)+(+sec.shift||0),d]);b+=d}));
+          const t=Math.round(b-ini);if(t>0)bloques.push({tipo:tipoDe(sec.name||""),compases:Math.max(1,Math.round(t/meter)),tiempos:t,compas:meter})});
+        if(!bloques.length)return;
+        MUSICA[id]=ev;
+        agregarCancion({id,titulo:String(sg.title||sg.id),bpm:+sg.tempo||120,compas:bloques[0].compas,bloques,prop:"dinamica"});
+        const C=CANCIONES.find(c=>c.id===id);if(C)C.sub="De la página de la lira";
+      });
+      renderCanciones();
+    }catch(e){console.warn("No se pudieron leer las piezas de la lira",e)}
+    f.remove()};
+    document.body.appendChild(f);
+  });
+})();
+</script>
+
+<script>
+/* ================= Banda ================= */
+const PASO = 0.6;                    // metros por paso
+// Croquis real de la banda. Cada hilera va de adelante (hilera 1, junto al director) hacia atrás.
+// Orden de cada hilera: fila 1 (izquierda del estudiante) → fila 5 (derecha). null = puesto vacío.
+const CROQUIS = [
+  ["Mariángel","Allis","Sarah","Ana Lía","Issabella"],
+  ["Luciana J.","Luciana R","Valentina","Luciana (tutti)","M Fernanda"],
+  ["Angeline","Mia","Massiel","Arleth","Daniela"],
+  ["Keren","Emma","Paula","Alana","M. Paula"],
+  ["Gabrielle",null,"Itzel",null,"Roy"],
+  [null,"Mariana","Samara","Camila",null],
+  ["Samuel","Samuel","Kianny","Santiago","Gustavo"],
+  ["Saúl","Elio","Profe","Valentina","Nicolas"],
+  ["Aldo","Tayler","Julian M.","Jose","Luis Diego"],
+  ["Mateo","Gabriel","Brandon","Carlos","Aaron"],
+  ["Zúñiga","Catalina","Julian","Isaac","Santiago"]
+];
+const FILAS = 5, HILERAS = CROQUIS.length;
+const SEC = {
+  liras:   {nombre:"Liras",    uno:"Lira",    color:"#e2a32e"},
+  tambores:{nombre:"Tambores", uno:"Tambor",  color:"#c8433a"},
+  bombos:  {nombre:"Bombos",   uno:"Bombo",   color:"#6b4fbf"}
+};
+const secDe = h => h<=5?"liras":h<=10?"tambores":"bombos";   // bombos en la última hilera (por confirmar)
+// Instrumentos fijos (congas, timbaleta, bongó, güiro, multitenor): solo avanzan o retroceden con toda la banda.
+const HILERA_FIJA = 7;
+const FIJO_OK = ["marcar","alto","adelante","atras","volver"];
+const PERS = [];
+// Construye la banda desde el croquis: cada puesto es "Nombre" o {n:"Nombre", s:"Suplente"} o null (vacío)
+function construirPERS(grid){
+  PERS.length=0;
+  grid.forEach((fila,hi)=>fila.forEach((c,fi)=>{const n=typeof c==="string"?c:(c&&c.n);if(!n)return;const h=hi+1;
+    PERS.push({h,f:fi+1,nombre:n,sup:(c&&typeof c==="object"&&c.s)||"",sec:secDe(h),fijo:h===HILERA_FIJA?"Instrumento fijo":null})}));
+}
+construirPERS(CROQUIS);
+const fmt = n => n.toLocaleString("es-CR",{maximumFractionDigits:1});
+const plabel = p => `${p.nombre} (${p.fijo?"fijo":SEC[p.sec].uno.toLowerCase()}, fila ${p.f}, hilera ${p.h})`;
+const permitidoFijo = a => a.sec==="todos"&&(!a.fila||a.fila==="todas")&&(!a.hilera||a.hilera==="todas")&&FIJO_OK.includes(a.t);
+
+/* ================= Selecciones (quién) ================= */
+const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+const SEL_FILA = {todas:["Todas las filas",range(1,5)],1:["Fila 1",[1]],2:["Fila 2",[2]],3:["Fila 3",[3]],4:["Fila 4",[4]],5:["Fila 5",[5]],
+  impares:["Filas impares (1-3-5)",[1,3,5]],pares:["Filas pares (2-4)",[2,4]],izq:["Filas 1 y 2 (izquierda)",[1,2]],der:["Filas 4 y 5 (derecha)",[4,5]],ext:["Filas 1 y 5 (exteriores)",[1,5]]};
+const SEL_HIL = {todas:["Todas las hileras",range(1,HILERAS)],impares:["Hileras impares",range(1,HILERAS).filter(h=>h%2)],pares:["Hileras pares",range(1,HILERAS).filter(h=>!(h%2))]};
+range(1,HILERAS).forEach(h=>SEL_HIL[h]=["Hilera "+h,[h]]);
+const SEL_SEC = {todos:"Toda la banda",liras:"Liras",tambores:"Tambores",bombos:"Bombos"};
+const coincide=(a,p)=>(a.sec==="todos"||a.sec===p.sec)&&SEL_FILA[a.fila||"todas"][1].includes(p.f)&&SEL_HIL[a.hilera||"todas"][1].includes(p.h);
+function quien(a){
+  const parts=[SEL_SEC[a.sec]];
+  if(a.fila&&a.fila!=="todas")parts.push(SEL_FILA[a.fila][0].toLowerCase());
+  if(a.hilera&&a.hilera!=="todas")parts.push(SEL_HIL[a.hilera][0].toLowerCase());
+  return parts.join(" · ");
+}
+
+/* ================= Movimientos ================= */
+const lerp=(a,b,t)=>a+(b-a)*t;
+const centro=p=>{let x=0,y=0;p.forEach(q=>{x+=q[0];y+=q[1]});return [x/p.length,y/p.length]};
+const hacia=(p,dest,t)=>p.map((q,i)=>[lerp(q[0],dest[i][0],t),lerp(q[1],dest[i][1],t)]);
+const mover=(dx,dy)=>(p,t,m)=>p.map(q=>[q[0]+dx*m.n*PASO*t,q[1]+dy*m.n*PASO*t]);
+const D2=Math.SQRT1_2;
+function ordenar(p,clave){return p.map((q,i)=>i).sort((a,b)=>clave(p[a])-clave(p[b]))}
+function aDestino(p,orden,slots,t){const dest=new Array(p.length);orden.forEach((idx,k)=>dest[idx]=slots[k]);return hacia(p,dest,t)}
+function escalar(kx,ky){return (p,t)=>{const [cx,cy]=centro(p),ax=1+(kx-1)*t,ay=1+(ky-1)*t;return p.map(q=>[cx+(q[0]-cx)*ax,cy+(q[1]-cy)*ay])}}
+function rueda(dir){return (p,t)=>{const [cx,cy]=centro(p),a=dir*2*Math.PI*t,c=Math.cos(a),s=Math.sin(a);return p.map(q=>{const dx=q[0]-cx,dy=q[1]-cy;return [cx+dx*c-dy*s,cy+dx*s+dy*c]})}}
+const pasosTxt=m=>`${m.n} ${m.n==1?"paso":"pasos"} (${fmt(m.n*PASO)} m)`;
+const MOV = {
+  marcar:    {cat:"Estático", nombre:"Marcar el paso en su lugar", txt:()=>"Marque el paso en su lugar", f:p=>p},
+  alto:      {cat:"Estático", nombre:"Alto (quieto)", txt:()=>"Alto: quédese quieto en su posición", f:p=>p},
+  adelante:  {cat:"Desplazamiento", n:true, nombre:"Hacia adelante", txt:m=>`Avance ${pasosTxt(m)} hacia el frente`, f:mover(0,-1)},
+  atras:     {cat:"Desplazamiento", n:true, nombre:"Hacia atrás", txt:m=>`Retroceda ${pasosTxt(m)}`, f:mover(0,1)},
+  izquierda: {cat:"Desplazamiento", n:true, nombre:"A la izquierda", txt:m=>`Desplácese ${pasosTxt(m)} a su izquierda`, f:mover(-1,0)},
+  derecha:   {cat:"Desplazamiento", n:true, nombre:"A la derecha", txt:m=>`Desplácese ${pasosTxt(m)} a su derecha`, f:mover(1,0)},
+  diag_ai:   {cat:"Desplazamiento", n:true, nombre:"Diagonal adelante-izquierda", txt:m=>`Avance en diagonal hacia adelante a la izquierda, ${pasosTxt(m)}`, f:mover(-D2,-D2)},
+  diag_ad:   {cat:"Desplazamiento", n:true, nombre:"Diagonal adelante-derecha", txt:m=>`Avance en diagonal hacia adelante a la derecha, ${pasosTxt(m)}`, f:mover(D2,-D2)},
+  diag_ti:   {cat:"Desplazamiento", n:true, nombre:"Diagonal atrás-izquierda", txt:m=>`Retroceda en diagonal hacia la izquierda, ${pasosTxt(m)}`, f:mover(-D2,D2)},
+  diag_td:   {cat:"Desplazamiento", n:true, nombre:"Diagonal atrás-derecha", txt:m=>`Retroceda en diagonal hacia la derecha, ${pasosTxt(m)}`, f:mover(D2,D2)},
+  circulo:   {cat:"Figuras", nombre:"Formar un círculo", txt:()=>"Formen un círculo alrededor del centro del grupo", f:(p,t)=>{
+               const [cx,cy]=centro(p),n=p.length,r=Math.max(1.5,n*1.2/(2*Math.PI));
+               const ord=ordenar(p,q=>Math.atan2(q[1]-cy,q[0]-cx+.35)),a0=Math.atan2(p[ord[0]][1]-cy,p[ord[0]][0]-cx+.35);
+               return aDestino(p,ord,ord.map((_,k)=>{const a=a0+2*Math.PI*k/n;return [cx+r*Math.cos(a),cy+r*Math.sin(a)]}),t)}},
+  rueda:     {cat:"Figuras", nombre:"Rueda (giro del grupo, reloj)", txt:()=>"Giren en rueda una vuelta completa, en el sentido del reloj", f:rueda(1)},
+  rueda_c:   {cat:"Figuras", nombre:"Rueda (contra reloj)", txt:()=>"Giren en rueda una vuelta completa, contra el reloj", f:rueda(-1)},
+  columna:   {cat:"Figuras", nombre:"Formar una sola columna", txt:()=>"Formen una sola columna, uno detrás del otro", f:(p,t)=>{
+               const [cx,cy]=centro(p),n=p.length,ord=ordenar(p,q=>q[1]*100+q[0]);return aDestino(p,ord,ord.map((_,k)=>[cx,cy+(k-(n-1)/2)*1.2]),t)}},
+  linea:     {cat:"Figuras", nombre:"Formar una línea de lado a lado", txt:()=>"Formen una línea de lado a lado", f:(p,t)=>{
+               const [cx,cy]=centro(p),n=p.length,ord=ordenar(p,q=>q[0]*100+q[1]);return aDestino(p,ord,ord.map((_,k)=>[cx+(k-(n-1)/2)*1.2,cy]),t)}},
+  abrir:     {cat:"Figuras", nombre:"Abrir distancia (adelante-atrás)", txt:()=>"Abran distancia: más espacio con quien va adelante y atrás", f:escalar(1,1.5)},
+  cerrar:    {cat:"Figuras", nombre:"Cerrar distancia (adelante-atrás)", txt:()=>"Cierren distancia: menos espacio con quien va adelante y atrás", f:escalar(1,1/1.5)},
+  intervalo: {cat:"Figuras", nombre:"Abrir intervalo (a los lados)", txt:()=>"Abran intervalo: más espacio con quien tiene a los lados", f:escalar(1.5,1)},
+  juntar:    {cat:"Figuras", nombre:"Cerrar intervalo (a los lados)", txt:()=>"Cierren intervalo: menos espacio con quien tiene a los lados", f:escalar(1/1.5,1)},
+  cambio:    {cat:"Figuras", nombre:"Cambiar de lado (fila 1↔5, 2↔4)", txt:()=>"Cruce al lado opuesto y cambie de lugar con su pareja de la otra fila", f:(p,t)=>{
+               return p.map(q=>{const dx=-2*q[0],n=Math.max(1,Math.round(Math.abs(dx)/PASO)),k=t*n,lane=PASO*Math.max(0,Math.min(1,k,n-k));
+                 return [q[0]+dx*t,q[1]+(dx>0?-lane:dx<0?lane:0)]})}},
+  volver:    {cat:"Figuras", nombre:"Volver a su puesto del bloque", txt:()=>"Regrese a su puesto en el bloque", f:(p,t,m,homes)=>hacia(p,homes,t)}
+};
+
+/* ================= Biblioteca de patrones ================= */
+const PATRONES = [
+  {cat:"Estáticos", nombre:"Toda la banda marca el paso", acc:[{sec:"todos",t:"marcar"}]},
+  {cat:"Estáticos", nombre:"Alto general", acc:[{sec:"todos",t:"alto"}]},
+  {cat:"Desplazamientos", nombre:"Avance general 4 pasos", acc:[{sec:"todos",t:"adelante",n:4}]},
+  {cat:"Desplazamientos", nombre:"Retroceso general 4 pasos", acc:[{sec:"todos",t:"atras",n:4}]},
+  {cat:"Desplazamientos", nombre:"Escalonado: filas impares adelante", acc:[{sec:"todos",fila:"impares",t:"adelante",n:2}]},
+  {cat:"Desplazamientos", nombre:"Ola: hileras impares adelante 1 paso", acc:[{sec:"todos",hilera:"impares",t:"adelante",n:1}]},
+  {cat:"Liras", nombre:"Espejo: liras abren a los lados", acc:[{sec:"liras",fila:"izq",t:"izquierda",n:4},{sec:"liras",fila:"der",t:"derecha",n:4}]},
+  {cat:"Liras", nombre:"Espejo de regreso: liras cierran", acc:[{sec:"liras",fila:"izq",t:"derecha",n:4},{sec:"liras",fila:"der",t:"izquierda",n:4}]},
+  {cat:"Liras", nombre:"Diagonales de liras hacia afuera", acc:[{sec:"liras",fila:"izq",t:"diag_ai",n:3},{sec:"liras",fila:"der",t:"diag_ad",n:3}]},
+  {cat:"Liras", nombre:"Dos círculos de liras (izquierda y derecha)", acc:[{sec:"liras",fila:"izq",t:"circulo"},{sec:"liras",fila:"der",t:"circulo"}]},
+  {cat:"Liras", nombre:"Dos ruedas de liras en espejo", acc:[{sec:"liras",fila:"izq",t:"rueda_c"},{sec:"liras",fila:"der",t:"rueda"}]},
+  {cat:"Liras", nombre:"Un círculo con todas las liras", acc:[{sec:"liras",t:"circulo"}]},
+  {cat:"Liras", nombre:"Liras en línea de frente", acc:[{sec:"liras",t:"linea"}]},
+  {cat:"Liras", nombre:"Cruce: filas 1↔5, hileras impares", acc:[{sec:"liras",fila:"ext",hilera:"impares",t:"cambio"}]},
+  {cat:"Liras", nombre:"Cruce: filas 1↔5, hileras pares", acc:[{sec:"liras",fila:"ext",hilera:"pares",t:"cambio"}]},
+  {cat:"Liras", nombre:"Cruce: filas 2↔4, hileras impares", acc:[{sec:"liras",fila:"pares",hilera:"impares",t:"cambio"}]},
+  {cat:"Liras", nombre:"Cruce: filas 2↔4, hileras pares", acc:[{sec:"liras",fila:"pares",hilera:"pares",t:"cambio"}]},
+  {cat:"Tambores y bombos", nombre:"Bombos salen a los lados (cancha)", acc:[{sec:"bombos",fila:"1",t:"izquierda",n:5},{sec:"bombos",fila:"2",t:"izquierda",n:6},{sec:"bombos",fila:"3",t:"derecha",n:9},{sec:"bombos",fila:"4",t:"derecha",n:8},{sec:"bombos",fila:"5",t:"derecha",n:7}]},
+  {cat:"Tambores y bombos", nombre:"Tambores abren distancia, bombos atrás", acc:[{sec:"tambores",t:"abrir"},{sec:"bombos",t:"atras",n:2}]},
+  {cat:"Tambores y bombos", nombre:"Tambores cierran distancia, bombos adelante", acc:[{sec:"tambores",t:"cerrar"},{sec:"bombos",t:"adelante",n:2}]},
+  {cat:"Tambores y bombos", nombre:"Bombos abren intervalo", acc:[{sec:"bombos",t:"intervalo"}]},
+  {cat:"Tambores y bombos", nombre:"Bombos cierran intervalo", acc:[{sec:"bombos",t:"juntar"}]},
+  {cat:"Regreso", nombre:"Toda la banda vuelve al bloque", acc:[{sec:"todos",t:"volver"}]},
+  {cat:"Regreso", nombre:"Liras vuelven al bloque", acc:[{sec:"liras",t:"volver"}]}
+];
+
+/* ================= Shows de ejemplo ================= */
+const EJEMPLOS = {
+  campo:{titulo:"Show de práctica", bpm:112, compas:4, partes:[
+    {nombre:"Entrada", tiempos:8, acciones:[{sec:"todos",t:"marcar"}]},
+    {nombre:"Apertura de liras", tiempos:8, acciones:[{sec:"liras",fila:"izq",t:"izquierda",n:4},{sec:"liras",fila:"der",t:"derecha",n:4}]},
+    {nombre:"Coro: círculos", tiempos:16, acciones:[{sec:"liras",fila:"izq",t:"circulo"},{sec:"liras",fila:"der",t:"circulo"}]},
+    {nombre:"Puente: ruedas", tiempos:16, acciones:[{sec:"liras",fila:"izq",t:"rueda_c"},{sec:"liras",fila:"der",t:"rueda"},{sec:"bombos",t:"atras",n:2}]},
+    {nombre:"Regreso", tiempos:8, acciones:[{sec:"todos",t:"volver"}]},
+    {nombre:"Final", tiempos:4, acciones:[{sec:"todos",t:"alto"}]}
+  ]},
+  fija:{titulo:"Show frente a la tarima", bpm:116, compas:4, ancho:7, partes:[
+    {nombre:"Entrada", tiempos:8, acciones:[{sec:"todos",t:"marcar"}]},
+    {nombre:"Liras escalonadas", tiempos:8, acciones:[{sec:"liras",fila:"impares",t:"adelante",n:2}]},
+    {nombre:"Liras regresan", tiempos:8, acciones:[{sec:"liras",t:"volver"}]},
+    {nombre:"Tambores escalonados", tiempos:8, acciones:[{sec:"tambores",fila:"pares",t:"atras",n:1}]},
+    {nombre:"Ola por hileras", tiempos:8, acciones:[{sec:"todos",t:"volver"},{sec:"todos",hilera:"impares",t:"adelante",n:1}]},
+    {nombre:"Regreso al bloque", tiempos:8, acciones:[{sec:"todos",t:"volver"}]},
+    {nombre:"Final", tiempos:4, acciones:[{sec:"todos",t:"alto"}]}
+  ]},
+  calle:{titulo:"Desfile de práctica", bpm:116, compas:4, ancho:7, partes:[
+    {nombre:"Salida", tiempos:16, avance:true, acciones:[{sec:"todos",t:"marcar"}]},
+    {nombre:"Liras escalonadas caminando", tiempos:8, avance:true, acciones:[{sec:"liras",fila:"impares",t:"adelante",n:2}]},
+    {nombre:"Liras regresan caminando", tiempos:8, avance:true, acciones:[{sec:"liras",t:"volver"}]},
+    {nombre:"Tambores escalonados caminando", tiempos:8, avance:true, acciones:[{sec:"tambores",fila:"pares",t:"atras",n:1}]},
+    {nombre:"Regreso al bloque caminando", tiempos:8, avance:true, acciones:[{sec:"todos",t:"volver"}]},
+    {nombre:"Alto frente a la tarima", tiempos:4, acciones:[{sec:"todos",t:"marcar"}]},
+    {nombre:"Continúa el desfile", tiempos:16, avance:true, acciones:[{sec:"todos",t:"marcar"}]}
+  ]}
+};
+const clone=o=>JSON.parse(JSON.stringify(o));
+const LUGAR={campo:"Cancha multiuso (28 × 15 m)",fija:"Calle fija",calle:"Desfile"};
+const enCalle=()=>modo!=="campo";
+
+/* ================= Canciones de la banda ================= */
+// Melodía de lira 1 de cada canción: [tiempo de inicio, nota MIDI, duración en tiempos]
+const MUSICA = {"popurri":[[0,86,1.5],[1.5,84,0.5],[2,83,1],[3,81,1],[4,79,1],[5,81,1],[6,83,1],[7,79,1],[8,81,0.5],[8.5,83,0.5],[9,84,0.5],[9.5,81,0.5],[10,83,1.5],[11.5,81,0.5],[12,79,1],[13,78,1],[14,79,2],[16,86,1.5],[17.5,84,0.5],[18,83,1],[19,81,1],[20,79,1],[21,81,1],[22,83,1],[23,79,1],[24,81,0.5],[24.5,83,0.5],[25,84,0.5],[25.5,81,0.5],[26,83,1.5],[27.5,81,0.5],[28,79,1],[29,78,1],[30,79,2],[32,81,1.5],[33.5,83,0.5],[34,84,1],[35,81,1],[36,83,1.5],[37.5,84,0.5],[38,86,1],[39,81,1],[40,83,0.5],[40.5,85,0.5],[41,86,1],[42,88,0.5],[42.5,90,0.5],[43,91,1],[44,90,1],[45,88,1],[46,86,2],[48,86,1.5],[49.5,84,0.5],[50,83,1],[51,81,1],[52,79,1],[53,81,1],[54,83,1],[55,79,1],[56,88,0.5],[56.5,88,0.5],[57,88,0.5],[57.5,88,0.5],[58,86,1.5],[59.5,84,0.5],[60,83,1],[61,81,1],[62,79,4],[66,91,1],[67,90,0.75],[67.75,88,0.25],[68,86,1.5],[69.5,84,0.5],[70,83,1],[71,81,1],[72,79,1.5],[73.5,86,0.5],[74,88,1.5],[75.5,88,0.5],[76,90,1.5],[77.5,90,0.5],[78,91,1.5],[79.5,91,0.5],[80,91,0.5],[80.5,90,0.5],[81,88,0.5],[81.5,86,0.5],[82,86,0.75],[82.75,84,0.25],[83,83,0.5],[83.5,91,0.5],[84,91,0.5],[84.5,90,0.5],[85,88,0.5],[85.5,86,0.5],[86,86,0.75],[86.75,84,0.25],[87,83,0.5],[87.5,83,0.5],[88,83,0.5],[88.5,83,0.5],[89,83,0.5],[89.5,83,0.25],[89.75,84,0.25],[90,86,1.5],[91.5,84,0.25],[91.75,83,0.25],[92,81,0.5],[92.5,81,0.5],[93,81,0.5],[93.5,81,0.25],[93.75,83,0.25],[94,84,1.5],[95.5,83,0.25],[95.75,81,0.25],[96,79,0.5],[96.5,91,1],[97.5,88,0.5],[98,86,0.75],[98.75,84,0.25],[99,83,0.5],[99.5,84,0.5],[100,83,1],[101,81,1],[102,79,2]],"navidad":[[0,88,0.5],[0.5,88,0.5],[1,88,1],[2,88,0.5],[2.5,88,0.5],[3,88,1],[4,88,0.5],[4.5,91,0.5],[5,84,0.5],[5.5,86,0.5],[6,88,2],[8,89,0.5],[8.5,89,0.5],[9,89,1],[10,89,0.5],[10.5,88,0.5],[11,88,1],[12,88,0.5],[12.5,86,0.5],[13,86,0.5],[13.5,88,0.5],[14,86,1],[15,91,1],[16,88,0.5],[16.5,88,0.5],[17,88,1],[18,88,0.5],[18.5,88,0.5],[19,88,1],[20,88,0.5],[20.5,91,0.5],[21,84,0.5],[21.5,86,0.5],[22,88,2],[24,89,0.5],[24.5,89,0.5],[25,89,1],[26,89,0.5],[26.5,88,0.5],[27,88,1],[28,91,0.5],[28.5,91,0.5],[29,89,0.5],[29.5,86,0.5],[30,84,2],[32,79,0.5],[32.5,88,0.5],[33,86,0.5],[33.5,84,0.5],[34,79,1.5],[35.5,79,0.5],[36,79,0.5],[36.5,88,0.5],[37,86,0.5],[37.5,84,0.5],[38,81,2],[40,81,0.5],[40.5,89,0.5],[41,88,0.5],[41.5,86,0.5],[42,83,1.5],[43.5,83,0.5],[44,91,0.5],[44.5,91,0.5],[45,89,0.5],[45.5,86,0.5],[46,88,2],[48,79,0.5],[48.5,88,0.5],[49,86,0.5],[49.5,84,0.5],[50,79,1.5],[51.5,79,0.5],[52,79,0.5],[52.5,88,0.5],[53,86,0.5],[53.5,84,0.5],[54,81,2],[56,81,0.5],[56.5,89,0.5],[57,88,0.5],[57.5,86,0.5],[58,91,0.5],[58.5,91,0.5],[59,91,0.5],[59.5,91,0.5],[60,93,0.5],[60.5,91,0.5],[61,89,0.5],[61.5,86,0.5],[62,84,2],[64,88,0.5],[64.5,88,0.5],[65,88,1],[66,88,0.5],[66.5,88,0.5],[67,88,1],[68,88,0.5],[68.5,91,0.5],[69,84,0.5],[69.5,86,0.5],[70,88,2],[72,89,0.5],[72.5,89,0.5],[73,89,1],[74,89,0.5],[74.5,88,0.5],[75,88,1],[76,88,0.5],[76.5,86,0.5],[77,86,0.5],[77.5,88,0.5],[78,86,1],[79,91,1],[80,88,0.5],[80.5,88,0.5],[81,88,1],[82,88,0.5],[82.5,88,0.5],[83,88,1],[84,88,0.5],[84.5,91,0.5],[85,84,0.5],[85.5,86,0.5],[86,88,2],[88,89,0.5],[88.5,89,0.5],[89,89,1],[90,89,0.5],[90.5,88,0.5],[91,88,1],[92,91,0.5],[92.5,91,0.5],[93,89,0.5],[93.5,86,0.5],[94,84,4]]};
+const CANCIONES = [
+  {id:"popurri", titulo:"Popurrí festivo", sub:"Deck the Halls + Joy to the World"},
+  {id:"navidad", titulo:"Navidad, Navidad", sub:"Coro · Estrofa · Coro"},
+  {id:"ejemplo", titulo:"Ejemplo", sub:"Show de práctica"}
+];
+const A=(sec,t,extra)=>({sec,t,...(extra||{})});
+const ESPEJO=[A("liras","izquierda",{fila:"izq",n:4}),A("liras","derecha",{fila:"der",n:4})];
+const CIRC2=[A("liras","circulo",{fila:"izq"}),A("liras","circulo",{fila:"der"})];
+const RUEDA2=[A("liras","rueda_c",{fila:"izq"}),A("liras","rueda",{fila:"der"})];
+const DIAG=[A("liras","diag_ai",{fila:"izq",n:3}),A("liras","diag_ad",{fila:"der",n:3})];
+const MARCA=[A("todos","marcar")], VOLVER=[A("todos","volver")];
+const LESC=[A("liras","adelante",{fila:"impares",n:2})], LVOL=[A("liras","volver")];
+const TESC=[A("tambores","atras",{fila:"pares",n:1})], OLA=[A("todos","adelante",{hilera:"impares",n:1})];
+const LOLA=[A("liras","adelante",{hilera:"impares",n:1})], BINT=[A("bombos","intervalo")], BJUN=[A("bombos","juntar")];
+const TEXT=[A("tambores","izquierda",{fila:"1",n:2}),A("tambores","derecha",{fila:"5",n:2})];
+const LEXT=[A("liras","izquierda",{fila:"1",n:1}),A("liras","derecha",{fila:"5",n:1})];
+const LEXTC=[A("liras","derecha",{fila:"1",n:1}),A("liras","izquierda",{fila:"5",n:1})];
+const LCEN=[A("liras","adelante",{fila:"3",n:2})], L3=t=>A("liras",t,{fila:"3"});
+const SW15=h=>A("liras","cambio",{fila:"ext",hilera:h}), SW24=h=>A("liras","cambio",{fila:"pares",hilera:h});
+const BOUT=[A("bombos","izquierda",{fila:"1",n:5}),A("bombos","izquierda",{fila:"2",n:6}),A("bombos","derecha",{fila:"3",n:9}),A("bombos","derecha",{fila:"4",n:8}),A("bombos","derecha",{fila:"5",n:7})];
+const TPA=[A("tambores","atras",{fila:"pares",n:1})], TPV=[A("tambores","adelante",{fila:"pares",n:1})];
+const RUEDA2I=[A("liras","rueda",{fila:"izq"}),A("liras","rueda_c",{fila:"der"})];
+const ESTRUCTURA = {
+  popurri:{bpm:116, compas:4,
+    basica:{partes:[["Deck · frases 1–2",16,4],["Deck · frases 3–4",16,4],["Deck · frases 5–6",16,4],["Deck · frases 7–8",18,4],["Joy · frases 1–2",14,2],["Joy · frases 3–5",12,2],["Joy · frases 6–7",12,2]],
+      campo:[MARCA,ESPEJO,CIRC2,RUEDA2,[...LVOL,...BINT],[...LESC,...TESC],VOLVER],
+      fija:[MARCA,LESC,LVOL,TESC,VOLVER,OLA,VOLVER]},
+    dinamica:{partes:[["Deck · frase 1",8,4],["Deck · frase 2",8,4],["Deck · frase 3",8,4],["Deck · frase 4",8,4],["Deck · frase 5",8,4],["Deck · frase 6",8,4],["Deck · frase 7",8,4],["Deck · frase 8",10,4],
+        ["Joy · frase 1",8,2],["Joy · frase 2",6,2],["Joy · frase 3",4,2],["Joy · frase 4",4,2],["Joy · frase 5",4,2],["Joy · frase 6",4,2],["Joy · frase 7 (final)",8,2]],
+      campo:[[...LOLA,...BINT],[...LVOL,...BJUN],ESPEJO,[...TEXT,...LCEN],[...CIRC2,L3("volver")],RUEDA2,RUEDA2I,VOLVER,
+        [...DIAG,...BINT],[L3("rueda"),...TESC],[L3("rueda_c")],[A("tambores","volver"),L3("volver")],LVOL,OLA,VOLVER],
+      fija:[LOLA,LVOL,LESC,[...LVOL,...TESC],[A("tambores","volver"),...LEXT],[...LEXTC,...LCEN],[L3("volver"),...TESC],VOLVER,
+        OLA,VOLVER,LESC,LVOL,TESC,VOLVER,VOLVER]}},
+  navidad:{bpm:126, compas:2,
+    basica:{partes:[["Coro · frases 1–2",16],["Coro · frases 3–4",16],["Estrofa · frases 1–2",16],["Estrofa · frases 3–4",16],["Coro final · frases 1–2",16],["Coro final · frases 3–4",18]],
+      campo:[MARCA,DIAG,CIRC2,RUEDA2,VOLVER,OLA],
+      fija:[MARCA,LESC,LVOL,TESC,VOLVER,OLA]},
+    dinamica:{
+      partes:[["Coro · frase 1",8],["Coro · frase 2",8],["Coro · frase 3",8],["Coro · frase 4",8],["Estrofa · frase 1",8],["Estrofa · frase 2",8],["Estrofa · frase 3",8],["Estrofa · frase 4",8],
+        ["Coro final · frase 1",8],["Coro final · frase 2",8],["Coro final · frase 3",8],["Coro final · frase 4",10]],
+      campoPartes:[["Coro · frases 1–2",16],["Coro · frases 3–4",16],["Estrofa · frase 1",8],["Estrofa · frase 2",8],["Estrofa · frase 3",8],["Estrofa · frase 4",8],["Coro final · frases 1–2",16],["Coro final · frases 3–4",18]],
+      campo:[[SW15("impares"),...BOUT],[SW15("pares"),A("bombos","adelante",{n:16}),...TPA],[SW24("impares"),...TPV],[SW24("pares"),A("bombos","adelante",{n:1})],
+        [SW24("impares")],[SW24("pares"),A("bombos","atras",{n:1}),...TPA],[SW15("impares"),A("bombos","atras",{n:16}),...TPV],[SW15("pares"),A("bombos","volver")]],
+      fija:[[SW15("impares")],[SW15("pares"),...TPA],[SW24("impares"),...TPV],[SW24("pares"),A("bombos","atras",{n:2})],
+        [...LOLA,A("bombos","adelante",{n:2})],[A("liras","atras",{hilera:"impares",n:1}),...TPA],[SW15("impares"),...TPV],[SW15("pares")],
+        [SW24("impares")],[SW24("pares")],[...LOLA,...TPA,A("bombos","atras",{n:1})],VOLVER]}}
+};
+const PROPUESTAS={dinamica:"Propuesta dinámica",basica:"Propuesta básica",vacia:"Coreografía vacía"};
+function plantilla(c,m,v){
+  if(c==="ejemplo")return clone(EJEMPLOS[m]);
+  {const C=CANCIONES.find(x=>x.id===c);if(C&&C.def)return generarShow(C.def,m,v||"dinamica")}
+  v=v||"dinamica";
+  const E=ESTRUCTURA[c], P=E[v], tit=CANCIONES.find(x=>x.id===c).titulo, acc=P[m]||P.fija;
+  return {titulo:tit, bpm:E.bpm, compas:E.compas, musica:c, propuesta:v, ...(m==="campo"?{}:{ancho:7}),
+    partes:(P[m+"Partes"]||P.partes).map(([nombre,tiempos,cp],i,arr)=>({nombre,tiempos,...(cp?{compas:cp}:{}),...(m==="calle"?{avance:!(v==="dinamica"&&i===arr.length-1)}:{}),acciones:clone(acc[i])}))};
+}
+const KEY=(c,m)=>c==="ejemplo"?m:`${c}-${m}`;
+const MODOS=["campo","fija","calle"];
+const data={}, guardado={}, dirty={}, guardadoDatos={}, ORIGEN={};
+CANCIONES.forEach(c=>MODOS.forEach(m=>{const k=KEY(c.id,m);data[k]=plantilla(c.id,m);guardado[k]=null;dirty[k]=false;guardadoDatos[k]=null;ORIGEN[k]=[c.id,m]}));
+let cancion="popurri";
+try{const c=localStorage.getItem("cancion");if(CANCIONES.some(x=>x.id===c))cancion=c}catch(e){}
+const K=()=>KEY(cancion,modo);
+
+/* ================= Estado ================= */
+let modo="campo", show=null, D=null;
+let count=0, playing=false, metro=true, slow=false, last=0, lastBeat=-1;
+let selF=1, selH=1, todos=false, editing=false, openPart=0;
+let db=null, puedeEditar=false;
+let selSup=false;
+try{const s=JSON.parse(localStorage.getItem("puesto")||"null");if(s){selF=s.f;selH=s.h;todos=!!s.todos;selSup=!!s.sup}
+  const m=localStorage.getItem("modo");if(MODOS.includes(m))modo=m}catch(e){}
+if(MODOS.includes(location.hash.slice(1)))modo=location.hash.slice(1);
+show=data[K()];
+let rol="general", vista="yo", loopIdx=-1;
+try{if(localStorage.getItem("rol")==="estudiante")rol="estudiante";const v=localStorage.getItem("vista");if(v==="banda")vista="banda"}catch(e){}
+if(location.hash.slice(1)==="estudiante")rol="estudiante";
+const esEst=()=>rol==="estudiante";
+const vistaYo=()=>esEst()&&vista==="yo"&&!todos;
+const $=id=>document.getElementById(id);
+const audio=new Audio(); let hasSong=false;
+const selIdx=()=>todos?-1:PERS.findIndex(p=>p.f===selF&&p.h===selH);
+
+/* ================= Cálculo de posiciones ================= */
+function homeDe(m){return PERS.map(p=>m==="campo"?[(p.f-3)*1.8,-6+(p.h-1)*1.2]:[(p.f-3)*1.2,(p.h-1)*1.2])}
+function asignar(parte){return PERS.map(p=>{let k=-1;(parte.acciones||[]).forEach((a,i)=>{if(coincide(a,p)&&(!p.fijo||permitidoFijo(a)))k=i});return k})}
+const esPaso=(b,n,T)=>n>0&&(b===0||Math.floor(b*n/T)>Math.floor((b-1)*n/T));
+function warp(tau,n,T){
+  if(n<=0||n>=T)return Math.min(1,tau/T);
+  const B=Math.floor(tau);if(B>=T)return 1;
+  const hechos=B===0?0:Math.floor((B-1)*n/T)+1;
+  return (hechos+(esPaso(B,n,T)?tau-B:0))/n;
+}
+function aplicar(i,pts,t){
+  const parte=show.partes[i], asg=D.asg[i], out=pts.slice(), grupos={}, T=parte.tiempos;
+  asg.forEach((k,idx)=>(grupos[k]=grupos[k]||[]).push(idx));
+  Object.entries(grupos).forEach(([k,idxs])=>{
+    const m=k<0?{t:"marcar"}:parte.acciones[k], mv=MOV[m.t]||MOV.marcar, mm={...m,n:+m.n||0};
+    const homes=idxs.map(j=>[D.home[j][0],D.home[j][1]-D.off[i]]), start=idxs.map(j=>pts[j]);
+    if(t>=1||!D.ns){const r=mv.f(start,Math.min(t,1),mm,homes);idxs.forEach((j,q)=>out[j]=r[q]);return}
+    const cache=new Map();
+    idxs.forEach((j,q)=>{const tw=warp(t*T,D.ns[i][j],T);let r=cache.get(tw);if(!r){r=mv.f(start,tw,mm,homes);cache.set(tw,r)}out[j]=r[q]});
+  });
+  if(parte.avance){const d=parte.tiempos*PASO*t;return out.map(q=>[q[0],q[1]-d])}
+  return out;
+}
+function prep(){
+  show.partes.forEach(p=>{p.tiempos=Math.max(1,Math.round(+p.tiempos||1))});
+  D={home:homeDe(modo),ini:[],fin:[],off:[],asg:[],base:[]};
+  let acc=0,off=0;
+  show.partes.forEach((p,i)=>{D.ini[i]=acc;acc+=p.tiempos;D.fin[i]=acc;D.off[i]=off;if(p.avance)off+=p.tiempos*PASO;D.asg[i]=asignar(p)});
+  D.total=acc;D.spb=60/(+show.bpm||100);
+  D.cp=[];D.mIni=[];let mc=0;show.partes.forEach((p,i)=>{D.cp[i]=+p.compas||+show.compas||4;D.mIni[i]=mc;mc+=Math.ceil(p.tiempos/D.cp[i])});D.mTotal=mc;
+  D.base=[D.home];show.partes.forEach((p,i)=>D.base.push(aplicar(i,D.base[i],1)));
+  // pasos de cada persona en cada parte: exactos (múltiplos de 0,6 m) o pasos cortos en cada tiempo
+  D.ns=[];D.cont=[];
+  show.partes.forEach((p,i)=>{D.ns[i]=[];D.cont[i]=[];const T=p.tiempos;
+    PERS.forEach((_,j)=>{const k=D.asg[i][j],a=k<0?{t:"marcar"}:p.acciones[k],t=a.t;
+      const dx=D.base[i+1][j][0]-D.base[i][j][0], dy=(D.base[i+1][j][1]+(p.avance?T*PASO:0))-D.base[i][j][1], dist=Math.hypot(dx,dy);
+      let n=0,cont=false;
+      if(t==="rueda"||t==="rueda_c"){n=T;cont=true}
+      else if(t==="marcar"||t==="alto"||dist<1e-6)n=0;
+      else if(MOV[t]&&MOV[t].n)n=+a.n||0;
+      else if(t==="cambio")n=Math.round(Math.abs(dx)/PASO);
+      else{const q=dist/PASO;if(Math.abs(q-Math.round(q))<.001)n=Math.round(q);else{n=T;cont=true}}
+      D.ns[i][j]=n;D.cont[i][j]=cont})});
+}
+const secIdx=c=>{for(let i=0;i<D.fin.length;i++)if(c<D.fin[i])return i;return D.fin.length-1};
+function posAt(c){const i=secIdx(c);return aplicar(i,D.base[i],Math.min(1,Math.max(0,(c-D.ini[i])/show.partes[i].tiempos)))}
+
+/* ================= Textos ================= */
+function movTxt(parte,m){
+  const mv=MOV[m.t]||MOV.marcar, mm={...m,n:+m.n||0};
+  if(parte.avance){const dist=`${parte.tiempos} pasos (${fmt(parte.tiempos*PASO)} m)`;
+    return m.t==="marcar"?`Marche hacia adelante con la banda: ${dist}`:"Sin dejar de desfilar: "+mv.txt(mm).replace(/^./,c=>c.toLowerCase())+(mv.n?`, además del paso de desfile`:"")}
+  return mv.txt(mm)+(mv.n?` en ${parte.tiempos} tiempos`:"");
+}
+function txtPersona(i,j){const k=D.asg[i][j];return movTxt(show.partes[i],k<0?{t:"marcar"}:show.partes[i].acciones[k])}
+function conQuien(i,j){const k=D.asg[i][j];if(PERS[j].fijo)return "Instrumento fijo: solo avanza o retrocede con toda la banda";return k<0?(show.partes[i].avance?"Desfila con toda la banda":"Marca el paso con el resto de la banda"):`Se mueve con: ${quien(show.partes[i].acciones[k])}`}
+function lineasTodos(i){
+  const parte=show.partes[i], usados=new Set(D.asg[i]);
+  const out=(parte.acciones||[]).map((a,k)=>usados.has(k)?{q:quien(a),t:movTxt(parte,a)}:null).filter(Boolean);
+  if(D.asg[i].some((k,j)=>k<0&&!PERS[j].fijo))out.push({q:out.length?"Los demás":"Toda la banda",t:movTxt(parte,{t:"marcar"})});
+  if(D.asg[i].some((k,j)=>k<0&&PERS[j].fijo))out.push({q:"Instrumentos fijos",t:movTxt(parte,{t:"marcar"})});
+  return out;
+}
+
+/* ================= Dibujo ================= */
+const cv=$("view"), ctx=cv.getContext("2d");
+let VIEW={S:1,x0:0,y0:0};
+const ancho=()=>+show.ancho||7;
+function aspecto(){if(vistaYo())return cv.parentElement.clientWidth>560?.72:1;return modo==="campo"?19/32:(editing?.8:1.3)}
+function sizeCanvas(){const w=cv.parentElement.clientWidth,d=(typeof ahorro!=="undefined"&&ahorro)?1:(devicePixelRatio||1),h=w*aspecto();cv.width=w*d;cv.height=h*d;cv.style.height=h+"px";draw()}
+const COL={basquet:"#ffffff", voley:"#ffd23f", futbol:"#ff6b5b"};
+function linea(T,pts,color,w){ctx.beginPath();pts.forEach((p,i)=>{const [X,Y]=T(p[0],p[1]);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});ctx.strokeStyle=color;ctx.lineWidth=w;ctx.stroke()}
+function arco(cx,cy,r,a0,a1,n=40){const o=[];for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;o.push([cx+r*Math.cos(a),cy+r*Math.sin(a)])}return o}
+const rect=(x0,y0,x1,y1)=>[[x0,y0],[x1,y0],[x1,y1],[x0,y1],[x0,y0]];
+function drawCancha(T,S){
+  ctx.fillStyle="#b5654a";ctx.fillRect(0,0,cv.width,cv.height);
+  const [ax,ay]=T(-14,-7.5),[bx,by]=T(14,7.5);ctx.fillStyle="#2f6b5a";ctx.fillRect(ax,ay,bx-ax,by-ay);
+  ctx.fillStyle="#285c4d";
+  [-1,1].forEach(sd=>{const [k0x,k0y]=T(sd*14,-2.45),[k1x,k1y]=T(sd*(14-5.8),2.45);ctx.fillRect(Math.min(k0x,k1x),k0y,Math.abs(k1x-k0x),k1y-k0y)});
+  const lw=Math.max(1.2,S*.06);
+  linea(T,arco(0,0,3,0,2*Math.PI,60),COL.futbol,lw);
+  [-1,1].forEach(sd=>{const gx=sd*14;
+    linea(T,[...arco(gx,-1.5,6,-Math.PI/2,sd>0?-Math.PI:0,20),...arco(gx,1.5,6,sd>0?Math.PI:0,Math.PI/2,20)],COL.futbol,lw);
+    linea(T,rect(gx,-1.5,gx+sd*1,1.5),COL.futbol,lw);
+    [6,10].forEach(d=>{const [px,py]=T(gx-sd*d,0);ctx.beginPath();ctx.arc(px,py,Math.max(1.5,S*.1),0,7);ctx.fillStyle=COL.futbol;ctx.fill()})});
+  linea(T,rect(-9,-4.5,9,4.5),COL.voley,lw);linea(T,[[0,-4.5],[0,4.5]],COL.voley,lw);
+  [-3,3].forEach(x=>linea(T,[[x,-4.5],[x,4.5]],COL.voley,lw));
+  linea(T,rect(-14,-7.5,14,7.5),COL.basquet,lw);linea(T,[[0,-7.5],[0,7.5]],COL.basquet,lw);
+  linea(T,arco(0,0,1.8,0,2*Math.PI,50),COL.basquet,lw);
+  const phi=Math.asin(Math.sqrt(6.75*6.75-6.6*6.6)/6.75);
+  [-1,1].forEach(sd=>{const b=sd*14,ft=sd*(14-5.8),aro=sd*(14-1.575);
+    linea(T,rect(b,-2.45,ft,2.45),COL.basquet,lw);linea(T,arco(ft,0,1.8,0,2*Math.PI,40),COL.basquet,lw);
+    const arc3=sd>0?arco(aro,0,6.75,-Math.PI/2-phi,-3*Math.PI/2+phi,60):arco(aro,0,6.75,-Math.PI/2+phi,Math.PI/2-phi,60);
+    linea(T,[[b,-6.6],...arc3,[b,6.6]],COL.basquet,lw);
+    const [hx,hy]=T(aro,0);ctx.beginPath();ctx.arc(hx,hy,.23*S,0,7);ctx.strokeStyle="#ff9f1c";ctx.lineWidth=Math.max(1.5,S*.08);ctx.stroke()});
+  ctx.fillStyle="#fff4e0";ctx.font=`700 ${Math.max(11,1.15*S)}px "Big Shoulders Display", sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("▲  FRENTE · PÚBLICO  ▲",cv.width/2,T(0,-8.5)[1]);
+}
+function drawCalle(T,S,y0,y1){
+  const half=ancho()/2, ac=1.5;
+  ctx.fillStyle="#d8ccb6";ctx.fillRect(0,0,cv.width,cv.height);
+  [-1,1].forEach(sd=>{const [x0]=T(sd>0?half:-half-ac,0),[x1]=T(sd>0?half+ac:-half,0);
+    ctx.fillStyle="#bdb8ae";ctx.fillRect(x0,0,x1-x0,cv.height);ctx.strokeStyle="rgba(0,0,0,.12)";ctx.lineWidth=1;
+    for(let y=Math.floor(y0/1.5)*1.5;y<y1;y+=1.5){const Y=T(0,y)[1];ctx.beginPath();ctx.moveTo(x0,Y);ctx.lineTo(x1,Y);ctx.stroke()}});
+  const [cx0]=T(-half,0),[cx1]=T(half,0);ctx.fillStyle="#3b3d42";ctx.fillRect(cx0,0,cx1-cx0,cv.height);
+  ctx.fillStyle="#9a958c";[-half,half].forEach(x=>{const [X]=T(x,0);ctx.fillRect(X-S*.08,0,S*.16,cv.height)});
+  ctx.strokeStyle="#f2f2f2";ctx.lineWidth=Math.max(1,S*.1);
+  [-half+.3,half-.3].forEach(x=>{const [X]=T(x,0);ctx.beginPath();ctx.moveTo(X,0);ctx.lineTo(X,cv.height);ctx.stroke()});
+  ctx.strokeStyle="#f5c518";ctx.lineWidth=Math.max(1.5,S*.12);
+  for(let y=Math.floor(y0/6)*6;y<y1;y+=6){const [X,Ya]=T(0,y),[,Yb]=T(0,y+3);ctx.beginPath();ctx.moveTo(X,Ya);ctx.lineTo(X,Yb);ctx.stroke()}
+  ctx.fillStyle="#2a2a2a";ctx.font=`700 ${Math.max(10,.7*S)}px "Atkinson Hyperlegible", sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";
+  for(let y=Math.floor(y0/10)*10;y<y1;y+=10){const [X,Y]=T(-half-ac/2,y);if(y<=0){ctx.fillText(fmt(-y)+" m",X,Y);ctx.fillRect(X-S*.6,Y+S*.45,S*1.2,1)}}
+  ctx.fillStyle="#5b564c";ctx.font=`700 ${Math.max(10,.6*S)}px "Atkinson Hyperlegible", sans-serif`;
+  [[-half-ac-0.5,-Math.PI/2],[half+ac+0.5,Math.PI/2]].forEach(([x,r])=>{const [X]=T(x,0);ctx.save();ctx.translate(X,cv.height/2);ctx.rotate(r);ctx.fillText("PÚBLICO",0,0);ctx.restore()});
+  const txt=modo==="fija"?"▲ FRENTE · TARIMA":"▲ SENTIDO DEL DESFILE";ctx.font=`700 ${Math.max(12,.9*S)}px "Big Shoulders Display", sans-serif`;
+  const tw=ctx.measureText(txt).width+S;ctx.fillStyle="rgba(20,22,28,.75)";ctx.fillRect(cv.width/2-tw/2,S*.3,tw,S*1.1);
+  ctx.fillStyle="#fff4e0";ctx.fillText(txt,cv.width/2,S*.85);
+}
+/* Recorrido personal: el estudiante en el centro, su camino de esta parte y huellas cada paso */
+// En el desfile el recorrido se dibuja respecto al bloque de la banda (sin el avance general), para que el fondo no cambie.
+function offAt(c){if(modo!=="calle")return 0;const i=secIdx(Math.min(c,D.total-1e-4)),p=show.partes[i],t=Math.min(1,Math.max(0,(c-D.ini[i])/p.tiempos));return D.off[i]+(p.avance?p.tiempos*PASO*t:0)}
+const rel=(c,q)=>[q[0],q[1]+offAt(c)];
+function caminoParte(me,i){const o=[];for(let c=D.ini[i];c<=D.fin[i]+1e-6;c+=.2){const cc=Math.min(c,D.fin[i]-1e-4);o.push([c,rel(cc,posAt(cc)[me])])}return o}
+function largo(pts){let L=0;for(let k=1;k<pts.length;k++)L+=Math.hypot(pts[k][0]-pts[k-1][0],pts[k][1]-pts[k-1][1]);return L}
+function restante(me){const i=secIdx(Math.min(count,D.total-.001)),cam=caminoParte(me,i),o=offAt(count),P=posAt(count).map(q=>[q[0],q[1]+o]),yo=P[me];
+  const rest=[yo,...cam.filter(([c])=>c>count).map(x=>x[1])];const fin=rest[rest.length-1];
+  return {i,cam,yo,rest,L:largo(rest),v:[fin[0]-yo[0],fin[1]-yo[1]],P}}
+// Cámara fija para todo el show: abarca el recorrido completo del estudiante
+let camCache={};
+function camaraShow(me){
+  if(camCache.D===D&&camCache.me===me)return camCache;
+  const todo=[];for(let c=0;c<=D.total;c+=.25){const cc=Math.min(c,D.total-1e-4);todo.push(rel(cc,posAt(cc)[me]))}
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;todo.forEach(q=>{x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);y0=Math.min(y0,q[1]);y1=Math.max(y1,q[1])});
+  const cx=(x0+x1)/2, cy=(y0+y1)/2, ext=Math.max(3,(x1-x0)/2,(y1-y0)/2);
+  camCache={D,me,todo,cx,cy,half:Math.min(20,ext+2)};return camCache;
+}
+function drawYo(){
+  const me=selIdx(), R=restante(me), {i,cam,yo,rest,P}=R, W=cv.width, H=cv.height;
+  const C=camaraShow(me), cx=C.cx, cy=C.cy, half=C.half, S=W/(2*half);
+  const T=(x,y)=>[W/2+(x-cx)*S,H/2+(y-cy)*S];
+  const yoXY=T(yo[0],yo[1]);
+  ctx.fillStyle="#1b2232";ctx.fillRect(0,0,W,H);
+  // cuadrícula de pasos (se mueve con el estudiante)
+  const k0x=Math.floor((cx-half)/PASO),k1x=Math.ceil((cx+half)/PASO),k0y=Math.floor((cy-half)/PASO),k1y=Math.ceil((cy+half)/PASO);
+  for(let k=k0x;k<=k1x;k++){const [X]=T(k*PASO,0);ctx.strokeStyle=k%4?"rgba(255,255,255,.07)":"rgba(255,255,255,.18)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X,0);ctx.lineTo(X,H);ctx.stroke()}
+  for(let k=k0y;k<=k1y;k++){const [,Y]=T(0,k*PASO);ctx.strokeStyle=k%4?"rgba(255,255,255,.07)":"rgba(255,255,255,.18)";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,Y);ctx.lineTo(W,Y);ctx.stroke()}
+  // compañeros cercanos
+  const rp=Math.max(4,.3*S);
+  PERS.forEach((p,j)=>{if(j===me)return;const [X,Y]=T(P[j][0],P[j][1]);if(X<-20||Y<-20||X>W+20||Y>H+20)return;
+    ctx.globalAlpha=D.asg[i][j]===D.asg[i][me]?.45:.2;ctx.beginPath();ctx.arc(X,Y,rp,0,7);ctx.fillStyle=SEC[p.sec].color;ctx.fill()});
+  ctx.globalAlpha=1;
+  // recorrido de todo el show, tenue, como contexto
+  ctx.beginPath();C.todo.forEach((q,k)=>{const [X,Y]=T(q[0],q[1]);k?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});
+  ctx.strokeStyle="rgba(255,244,224,.12)";ctx.lineWidth=Math.max(2,S*.05);ctx.stroke();
+  // camino ya recorrido en esta parte
+  const hecho=cam.filter(([c])=>c<=count).map(x=>x[1]);
+  if(hecho.length>1){ctx.beginPath();hecho.forEach((q,k)=>{const [X,Y]=T(q[0],q[1]);k?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});ctx.strokeStyle="rgba(255,244,224,.25)";ctx.lineWidth=Math.max(2,S*.08);ctx.stroke()}
+  // camino que falta + huellas cada paso
+  if(R.L>.15){
+    ctx.beginPath();rest.forEach((q,k)=>{const [X,Y]=T(q[0],q[1]);k?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});
+    ctx.setLineDash([S*.15,S*.12]);ctx.strokeStyle="#f0c050";ctx.lineWidth=Math.max(2,S*.06);ctx.stroke();ctx.setLineDash([]);
+    let acc=0,next=PASO,n=1;ctx.font=`700 ${Math.max(10,.32*S)}px "Atkinson Hyperlegible", sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";
+    for(let k=1;k<rest.length;k++){const a=rest[k-1],b=rest[k],d=Math.hypot(b[0]-a[0],b[1]-a[1]);
+      while(acc+d>=next){const t=(next-acc)/d,x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t,[X,Y]=T(x,y);
+        ctx.beginPath();ctx.arc(X,Y,Math.max(5,.17*S),0,7);ctx.fillStyle="#f0c050";ctx.fill();
+        ctx.fillStyle="#1b2232";ctx.fillText(n,X,Y+.5);n++;next+=PASO}
+      acc+=d}
+    const e=rest[rest.length-1],[EX,EY]=T(e[0],e[1]);ctx.beginPath();ctx.arc(EX,EY,Math.max(10,.42*S),0,7);ctx.strokeStyle="#f0c050";ctx.lineWidth=Math.max(2,S*.06);ctx.stroke();
+    ctx.fillStyle="#f0c050";ctx.font=`700 ${Math.max(11,.34*S)}px "Atkinson Hyperlegible", sans-serif`;ctx.fillText("Llegada",EX,EY+Math.max(18,.75*S));
+  }
+  // el estudiante
+  const [SX,SY]=T(cam[0][1][0],cam[0][1][1]);
+  if(Math.hypot(SX-yoXY[0],SY-yoXY[1])>4){ctx.beginPath();ctx.arc(SX,SY,Math.max(8,.3*S),0,7);ctx.strokeStyle="rgba(255,244,224,.35)";ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle="rgba(255,244,224,.5)";ctx.font=`700 ${Math.max(11,.3*S)}px "Atkinson Hyperlegible", sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Inicio",SX,SY-Math.max(16,.6*S))}
+  const [YX,YY]=yoXY, ry=Math.max(12,.38*S);ctx.beginPath();ctx.arc(YX,YY,ry*1.7,0,7);ctx.strokeStyle="rgba(255,244,224,.5)";ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(YX,YY,ry,0,7);ctx.fillStyle=SEC[PERS[me].sec].color;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle="#fff4e0";ctx.stroke();
+  ctx.fillStyle="#fff";ctx.font=`700 ${ry*.8}px "Big Shoulders Display", sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("YO",YX,YY+1);
+  // rótulos
+  ctx.fillStyle="#fff4e0";ctx.font=`700 ${Math.max(13,W*.035)}px "Big Shoulders Display", sans-serif`;
+  ctx.fillText(modo==="calle"?"▲ HACIA DONDE CAMINA EL DESFILE":"▲ FRENTE",W/2,Math.max(16,W*.035));
+  ctx.fillStyle="rgba(255,244,224,.6)";ctx.font=`400 ${Math.max(11,W*.026)}px "Atkinson Hyperlegible", sans-serif`;
+  ctx.fillText("Cada cuadro de la cuadrícula = 1 paso",W/2,H-Math.max(14,W*.03));
+}
+/* ================= Descripción clara del movimiento de cada persona ================= */
+const DIRS=[["a su derecha","→"],["diagonal atrás-derecha","↘"],["hacia atrás","↓"],["diagonal atrás-izquierda","↙"],["a su izquierda","←"],["diagonal adelante-izquierda","↖"],["hacia el frente","↑"],["diagonal adelante-derecha","↗"]];
+const sector=a=>((Math.round(a/(Math.PI/4))%8)+8)%8;
+const PARA={circulo:"para formar el círculo de su grupo",columna:"para formar una sola columna",linea:"para formar una línea de lado a lado",abrir:"para abrir distancia",cerrar:"para cerrar distancia",intervalo:"para abrir intervalo",juntar:"para cerrar intervalo",volver:"para volver a su puesto del bloque"};
+const movCache=new Map();
+function movInfo(i,j){
+  if(movCache.D!==D){movCache.clear();movCache.D=D}
+  const key=i+"-"+j;if(movCache.has(key))return movCache.get(key);
+  const parte=show.partes[i], k=D.asg[i][j], a=k<0?{t:"marcar"}:parte.acciones[k], t=a.t;
+  const o0=D.off[i], o1=D.off[i]+(parte.avance?parte.tiempos*PASO:0);
+  const s0=D.base[i][j], e0=D.base[i+1][j], v=[e0[0]-s0[0],(e0[1]+o1)-(s0[1]+o0)], dist=Math.hypot(v[0],v[1]);
+  const n=D.ns[i][j], cont=D.cont[i][j];
+  const tipo=(t==="rueda"||t==="rueda_c")?"giro":n>0?"recto":"quieto";
+  const info={tipo,t,a,k,n,cont,dist,ang:Math.atan2(v[1],v[0]),tiempos:parte.tiempos,avance:!!parte.avance,sentido:t==="rueda_c"?-1:1,fijo:!!PERS[j].fijo};
+  movCache.set(key,info);return info;
+}
+function ritmoTxt(n,t){if(!n)return `${t} tiempos`;if(n===1&&t>1)return `1 solo paso en ${t} tiempos (en el tiempo 1)`;const r=t/n;if(Math.abs(r-Math.round(r))<1e-9){const R=Math.round(r);return R===1?"1 paso en cada tiempo":`1 paso cada ${R} tiempos`}return `${n} pasos repartidos en ${t} tiempos`}
+function vis(i,j){
+  const I=movInfo(i,j), fig=PARA[I.t];
+  if(I.tipo==="quieto"){
+    if(I.avance)return {I,svg:{tipo:"recto",ang:-Math.PI/2},num:"",big:"Desfile",dir:"Avance con la banda",how:`1 paso en cada tiempo · ${I.tiempos} pasos (${fmt(I.tiempos*PASO)} m)`,n:I.tiempos,sym:"↑"};
+    return {I,svg:I,num:"",big:I.t==="alto"?"Alto":"En su lugar",dir:I.t==="alto"?"Quédese quieto":"Marque el paso",how:`${I.tiempos} tiempos sin desplazarse`,n:0,sym:"·"};
+  }
+  if(I.tipo==="giro")return {I,svg:I,num:"",big:"Rueda",dir:I.sentido>0?"Gire con su grupo, sentido del reloj ↻":"Gire con su grupo, contra el reloj ↺",how:`Una vuelta completa en ${I.tiempos} tiempos · 1 paso en cada tiempo${I.avance?" · sin dejar de desfilar":""}`,n:I.n,sym:I.sentido>0?"↻":"↺"};
+  if(I.cont){const d=DIRS[sector(I.ang)];return {I,svg:I,num:I.n,big:"pasos cortos",dir:d[0].replace(/^./,c=>c.toUpperCase())+" "+d[1],
+    how:[fig?fig[0].toUpperCase()+fig.slice(1):"",`1 paso corto en cada tiempo · recorre ${fmt(I.dist)} m`,I.avance?"sin dejar de desfilar":""].filter(Boolean).join(" · "),n:I.n,sym:d[1]}}
+  const d=DIRS[sector(I.ang)];
+  if(I.t==="cambio"){const der=Math.cos(I.ang)>0;
+    return {I,svg:I,num:I.n,big:I.n===1?"paso":"pasos",dir:der?"Cruce a su derecha →":"Cruce a su izquierda ←",
+      how:[`Cambia con la fila ${6-PERS[j].f}`,`pasa por ${der?"delante":"detrás"} de su hilera (1.er y último paso en diagonal)`,ritmoTxt(I.n,I.tiempos),I.avance?"sin dejar de desfilar":""].filter(Boolean).join(" · "),n:I.n,sym:der?"→":"←"}}
+  return {I,svg:I,num:I.n,big:I.n===1?"paso":"pasos",dir:d[0].replace(/^./,c=>c.toUpperCase())+" "+d[1],how:[fig?fig[0].toUpperCase()+fig.slice(1):"",ritmoTxt(I.n,I.tiempos),I.avance?"sin dejar de desfilar":""].filter(Boolean).join(" · "),n:I.n,sym:d[1]};
+}
+function flechaSVG(I){
+  const head=(x,y,dx,dy)=>{const s=15,w=13,px=-dy,py=dx;return `<path d="M${x+dx*s} ${y+dy*s} L${x+px*w} ${y+py*w} L${x-px*w} ${y-py*w} Z" fill="currentColor"/>`};
+  if(I.tipo==="quieto")return `<svg viewBox="-50 -50 100 100" aria-hidden="true"><circle r="11" fill="currentColor"/><circle r="27" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="5 7" opacity=".7"/></svg>`;
+  if(I.tipo==="giro"){const r=28,a0=-150*Math.PI/180,a1=150*Math.PI/180,x0=r*Math.cos(a0),y0=r*Math.sin(a0),x1=r*Math.cos(a1),y1=r*Math.sin(a1),tx=-Math.sin(a1),ty=Math.cos(a1);
+    return `<svg viewBox="-50 -50 100 100" aria-hidden="true"><g${I.sentido<0?' transform="scale(-1,1)"':''}><path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 1 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>${head(x1,y1,tx,ty)}</g><circle r="6" fill="currentColor" opacity=".55"/></svg>`}
+  const deg=(I.ang*180/Math.PI).toFixed(1);
+  return `<svg viewBox="-50 -50 100 100" aria-hidden="true"><g transform="rotate(${deg})"><path d="M-34 0 H10" stroke="currentColor" stroke-width="10" stroke-linecap="round"/><path d="M6 -21 L38 0 L6 21 Z" fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/></g></svg>`;
+}
+function tiraTiempos(i,V,bi){
+  const t=show.partes[i].tiempos, n=V.n;
+  return Array.from({length:t},(_,b)=>{const paso=n>0&&(b===0||Math.floor(b*n/t)>Math.floor((b-1)*n/t));
+    return `<div class="bt${paso?" p":""}${b<bi?" done":""}${b===bi?" on":""}"><i>${b+1}</i>${paso?V.sym:"·"}</div>`}).join("");
+}
+function draw(){
+  if(!D)return;
+  if(vistaYo()&&selIdx()>=0){drawYo();return}
+  const P=posAt(count), i=secIdx(count), endP=D.base[i+1];
+  let T,S;
+  if(modo==="campo"){S=cv.width/32;VIEW={S,x0:-16,y0:-9.5};T=(x,y)=>[(x+16)*S,(y+9.5)*S];drawCancha(T,S)}
+  else{const VW=ancho()+5;S=cv.width/VW;const VH=cv.height/S;let cy=0;(modo==="fija"?D.home:P).forEach(q=>cy+=q[1]);cy/=P.length;if(modo==="fija")cy-=1;
+    const y0=cy-VH/2;VIEW={S,x0:-VW/2,y0};T=(x,y)=>[(x+VW/2)*S,(y-y0)*S];drawCalle(T,S,y0,y0+VH)}
+  const r=Math.max(3.5,.36*S), me=selIdx(), myK=me>=0?D.asg[i][me]:null;
+  { // director, al frente de la banda
+    const pt=show.partes[i], tt=Math.min(1,Math.max(0,(count-D.ini[i])/pt.tiempos)), off=D.off[i]+(pt.avance?pt.tiempos*PASO*tt:0);
+    const [X,Y]=T(0,(modo==="campo"?-6:0)-1.7-off), d=r*1.3;
+    ctx.beginPath();ctx.moveTo(X,Y-d);ctx.lineTo(X+d,Y);ctx.lineTo(X,Y+d);ctx.lineTo(X-d,Y);ctx.closePath();
+    ctx.fillStyle="#fff4e0";ctx.fill();ctx.strokeStyle="#1f2a55";ctx.lineWidth=Math.max(1,S*.05);ctx.stroke();
+    if(S>14){ctx.fillStyle="#fff4e0";ctx.font=`700 ${Math.max(10,.55*S)}px "Atkinson Hyperlegible", sans-serif`;ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText("Director",X+d*1.4,Y)}
+  }
+  if(me>=0){ctx.setLineDash([S*.3,S*.3]);ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineWidth=Math.max(1.2,S*.07);
+    const q=P[me],e=endP[me],[ax,ay]=T(q[0],q[1]),[bx,by]=T(e[0],e[1]);
+    if(Math.hypot(bx-ax,by-ay)>2){ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();ctx.beginPath();ctx.arc(bx,by,r*.6,0,7);ctx.stroke()}
+    ctx.setLineDash([])}
+  PERS.forEach((p,j)=>{const [X,Y]=T(P[j][0],P[j][1]);
+    ctx.globalAlpha=me<0||j===me?1:(D.asg[i][j]===myK?.85:.35);
+    const rr=j===me?r*1.35:r;ctx.beginPath();
+    if(p.fijo){if(ctx.roundRect)ctx.roundRect(X-rr,Y-rr,rr*2,rr*2,rr*.35);else ctx.rect(X-rr,Y-rr,rr*2,rr*2)}else ctx.arc(X,Y,rr,0,7);
+    ctx.fillStyle=SEC[p.sec].color;ctx.fill();
+    ctx.lineWidth=j===me?Math.max(2,S*.12):Math.max(1,S*.05);ctx.strokeStyle=j===me?"#fff4e0":"rgba(255,255,255,.9)";ctx.stroke();
+    if(j===me){ctx.beginPath();ctx.arc(X,Y,r*2,0,7);ctx.strokeStyle="#fff4e0";ctx.lineWidth=Math.max(1.5,S*.06);ctx.stroke()}});
+  ctx.globalAlpha=1;
+}
+cv.addEventListener("click",e=>{
+  if(vistaYo())return;
+  const b=cv.getBoundingClientRect(),k=cv.width/b.width,X=(e.clientX-b.left)*k,Y=(e.clientY-b.top)*k;
+  const wx=X/VIEW.S+VIEW.x0, wy=Y/VIEW.S+VIEW.y0, P=posAt(count);
+  let best=-1,bd=1.2;P.forEach((q,j)=>{const d=Math.hypot(q[0]-wx,q[1]-wy);if(d<bd){bd=d;best=j}});
+  if(best>=0){selF=PERS[best].f;selH=PERS[best].h;todos=false;guardarPuesto();renderPuesto();renderGuide();ui()}
+});
+
+/* ================= Revisión: choques y bordes ================= */
+let chkTimer=null;
+function revisar(){clearTimeout(chkTimer);chkTimer=setTimeout(()=>{
+  const msgs=[];let choque=null,borde=null;
+  for(let c=0;c<=D.total&&(!choque||!borde);c+=.5){const P=posAt(Math.min(c,D.total)),i=secIdx(c);
+    if(!borde)P.forEach((q,j)=>{if(borde)return;const fuera=modo==="campo"?(Math.abs(q[0])>14||Math.abs(q[1])>7.5):Math.abs(q[0])>ancho()/2-.4;
+      if(fuera)borde={c,i,j}});
+    if(!choque)for(let a=0;a<P.length&&!choque;a++)for(let b=a+1;b<P.length;b++){if(Math.hypot(P[a][0]-P[b][0],P[a][1]-P[b][1])<.5){choque={c,i,a,b};break}}}
+  if(choque)msgs.push({t:`Posible choque en «${show.partes[choque.i].nombre}», tiempo ${Math.floor(choque.c)+1}: ${plabel(PERS[choque.a])} y ${plabel(PERS[choque.b])}.`,c:choque.c});
+  if(borde)msgs.push({t:modo==="campo"?`En «${show.partes[borde.i].nombre}», tiempo ${Math.floor(borde.c)+1}, ${plabel(PERS[borde.j])} se sale de la cancha.`
+    :`En «${show.partes[borde.i].nombre}», tiempo ${Math.floor(borde.c)+1}, ${plabel(PERS[borde.j])} queda a menos de 40 cm del cordón (calle de ${ancho()} m).`,c:borde.c});
+  const al=$("alert");al.hidden=!msgs.length;al.innerHTML="";
+  msgs.forEach(m=>{const d=document.createElement("div");d.textContent="⚠ "+m.t;al.appendChild(d)});
+  if(msgs.length){const b=document.createElement("button");b.textContent="Ir a ese momento";b.onclick=()=>seek(Math.floor(msgs[0].c));al.appendChild(b)}
+},250)}
+
+/* ================= Interfaz general ================= */
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+PERS.map(p=>p).sort((a,b)=>a.nombre.localeCompare(b.nombre,"es")).forEach(p=>
+  $("selN").add(new Option(`${p.nombre} · ${p.fijo?"Fijo":SEC[p.sec].uno} (F${p.f}, H${p.h})`,p.h+"-"+p.f)));
+function guardarPuesto(){try{localStorage.setItem("puesto",JSON.stringify({f:selF,h:selH,todos,sup:selSup}))}catch(e){}}
+function nomVis(j){const p=PERS[j];return j===selIdx()&&selSup&&p.sup?p.sup:p.nombre}
+function renderPuesto(){if(!todos&&selIdx()<0){selF=PERS[0].f;selH=PERS[0].h}
+  {const me=selIdx(),p=PERS[me];$("quienK").textContent=todos?"Viendo":p.fijo?"Instrumento fijo":SEC[p.sec].uno;if(!p.sup)selSup=false;$("quienK").textContent=todos?"Viendo":(selSup?"Suplente · ":"")+(p.fijo?"Instrumento fijo":SEC[p.sec].uno);$("quienTxt").textContent=todos?"Toda la banda":nomVis(me);
+   $("nombres").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.j===me&&!!b.dataset.sup===selSup))}$("selN").value=selH+"-"+selF;$("verTodos").setAttribute("aria-pressed",todos)}
+$("selN").onchange=e=>{const [h,f]=e.target.value.split("-").map(Number);selH=h;selF=f;todos=false;guardarPuesto();renderPuesto();renderGuide();ui()};
+$("verTodos").onclick=()=>{todos=!todos;cerrarSheets();guardarPuesto();renderPuesto();renderGuide();ui()};
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{setModo(b.dataset.mode);cerrarSheets()});
+document.querySelectorAll("#widths button").forEach(b=>b.onclick=()=>{show.ancho=+b.dataset.w;marcarCambio(false);renderWidths();revisar();ui()});
+function renderWidths(){document.querySelectorAll("#widths button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.w===ancho()))}
+
+function renderHeader(){
+  $("title").textContent=show.titulo||"Sin título";$("lugarTxt").textContent=LUGAR_CORTO[modo];
+  const est=guardado[K()]?`<span class="tag">Guardado</span>`:`<span class="tag">${cancion==="ejemplo"?"Ejemplo":(PROPUESTAS[show.propuesta]||"Propuesta")+" sin guardar"}</span>`;
+  $("meta").innerHTML=`${enCalle()?`${LUGAR[modo]} · calle de ${ancho()} m`:LUGAR.campo} · ${esc(show.bpm)} BPM · ${[...new Set(D.cp)].map(n=>n+"/4").join(" y ")} · ${D.mTotal} compases · ${PERS.length} integrantes${est}`;
+}
+function renderTimeline(){
+  const tl=$("timeline");tl.querySelectorAll(".seg").forEach(e=>e.remove());
+  show.partes.forEach((s,i)=>{const b=document.createElement("button");b.className="seg";b.style.flex=s.tiempos;b.textContent=s.nombre||"Parte "+(i+1);b.title=`${s.nombre} (${s.tiempos} tiempos)`;b.onclick=()=>seek(D.ini[i]);tl.insertBefore(b,$("playhead"))});
+  $("scrub").max=D.total;
+}
+function setModo(m){
+  if(playing)stop();
+  modo=m;show=data[K()];try{localStorage.setItem("modo",m)}catch(e){}
+  if(hasSong){audio.pause();hasSong=false;$("songnote").textContent="Sin canción cargada: se usa el metrónomo al tempo del show."}
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.mode===m));
+  $("widths").hidden=m==="campo";
+  $("legend").innerHTML=Object.values(SEC).map(s=>`<span><i class="d" style="background:${s.color}"></i>${s.nombre}</span>`).join("")
+    +`<span><i class="d" style="background:${SEC.tambores.color};border-radius:3px"></i>Fijo</span>`+(m==="campo"
+    ?`<span><i style="background:${COL.basquet};box-shadow:0 0 0 1px var(--line)"></i>Baloncesto</span><span><i style="background:${COL.voley}"></i>Voleibol</span><span><i style="background:${COL.futbol}"></i>Fútbol sala</span>`
+    :`<span><i style="background:#3b3d42"></i>Calzada</span><span><i style="background:#bdb8ae"></i>Acera 1,5 m</span>`);
+  $("foot").textContent=(m==="campo"
+    ?"Izquierda y derecha son las del estudiante, mirando al frente (al público). 1 paso ≈ 0,6 m. Las líneas de la cancha sirven de referencia en los ensayos."
+    :m==="fija"?"Show en un solo punto de la calle: la banda no avanza, todas las figuras se hacen en el lugar. Izquierda y derecha son las del estudiante, mirando al frente. 1 paso ≈ 0,6 m."
+    :"Las partes marcadas como «caminando» combinan la figura con el avance del desfile (un paso por tiempo). La banda avanza hacia arriba; izquierda y derecha son las del estudiante, mirando hacia donde camina el desfile. 1 paso ≈ 0,6 m, un paso por tiempo al desfilar.")
+    +" Formación según el croquis: 5 filas × 11 hileras; liras en las hileras 1–5, tambores en la 6–10 y bombos en la 11. Los cuadrados son los instrumentos fijos (congas, timbaleta, bongó, güiro, multitenor): solo avanzan o retroceden con toda la banda.";
+  count=0;openPart=0;loopIdx=-1;$("loopBtn").setAttribute("aria-pressed","false");renderCanciones();renderNotaMusica();refresh(true);
+}
+function refresh(editorToo){prep();renderHeader();renderWidths();renderTimeline();renderGuide();if(editorToo)renderEditor();revisar();sizeCanvas();ui()}
+
+function renderGuide(){
+  const me=selIdx();
+  $("guidelabel").textContent=me<0?"Hoja de ruta · toda la banda":`Hoja de ruta de ${nomVis(me)}`;
+  $("guide").innerHTML=show.partes.map((s,i)=>{
+    const c1=D.mIni[i]+1, c2=D.mIni[i]+Math.ceil(s.tiempos/D.cp[i]), when=`T ${D.ini[i]+1}–${D.fin[i]} · compases ${c1}–${c2}`;
+    if(me<0)return `<li data-i="${i}"><span class="gi n">${i+1}</span><span class="gw"><b>${esc(s.nombre||"Parte "+(i+1))}</b> <small>${when}</small>${lineasTodos(i).map(l=>`<span class="g2"><b>${esc(l.q)}:</b> ${esc(l.t)}</span>`).join("")}</span></li>`;
+    const V=vis(i,me);
+    return `<li data-i="${i}"><span class="gi">${flechaSVG(V.svg)}</span><span class="gw"><b>${V.num!==""?V.num+" "+V.big:V.big}</b> · ${esc(V.dir)}<small>${esc(s.nombre||"Parte "+(i+1))} · ${when} · ${esc(V.how)}</small></span></li>`}).join("");
+  $("guide").querySelectorAll("li").forEach(li=>li.onclick=()=>seek(D.ini[+li.dataset.i]));
+}
+function ui(){
+  if(!D||!D.total)return;
+  const c=Math.min(count,D.total-.001), i=secIdx(c), s=show.partes[i], beat=Math.floor(c), cp=D.cp[i], bi=beat-D.ini[i];
+  $("clock").textContent=`Compás ${D.mIni[i]+Math.floor(bi/cp)+1} · tiempo ${bi%cp+1}`;
+  $("clockSec").textContent=`${s.nombre} · tiempo ${bi+1} de ${s.tiempos}`;
+  $("secname").textContent=s.nombre;
+  $("playhead").style.left=(c/D.total*100)+"%";
+  $("scrub").value=count;
+  $("timeline").querySelectorAll(".seg").forEach((b,k)=>b.classList.toggle("on",k===i));
+  $("guide").querySelectorAll("li").forEach((li,k)=>li.classList.toggle("on",k===i));
+  const nx=show.partes[i+1], prog=(c-D.ini[i])/s.tiempos*100, me=selIdx();
+  if(me<0){
+    $("now").innerHTML=`<div class="nh"><span class="who">Toda la banda</span><span class="part">${esc(s.nombre)}</span><span class="beat">Tiempo ${bi+1} de ${s.tiempos}</span></div>
+      <div class="bar"><i style="width:${prog}%"></i></div>
+      <div class="grp">${lineasTodos(i).map(l=>`<b>${esc(l.q)}</b><span>${esc(l.t)}</span>`).join("")}</div>`;
+  }else{
+    const p=PERS[me], V=vis(i,me), rem=D.fin[i]-beat;
+    let nextHTML="Último movimiento del show.";
+    if(nx){const V2=vis(i+1,me);nextHTML=`<span class="cd">${rem===1?"¡Cambia ya!":`En ${rem} tiempos`}</span><span class="mini">${flechaSVG(V2.svg)}</span><span class="nt"><b>${V2.num!==""?V2.num+" "+V2.big:V2.big}</b> · ${esc(V2.dir)}</span>`}
+    $("now").innerHTML=`<div class="nh"><span class="pill${p.fijo?" fijo":""}" style="--c:${SEC[p.sec].color}"><i></i>${p.fijo?"Fijo":SEC[p.sec].uno}</span><span class="who">${esc(nomVis(me))}</span><span class="part">${esc(s.nombre)}</span><span class="beat">Tiempo ${bi+1}/${s.tiempos}</span></div>
+      <div class="mov"><div class="pict"><span class="fr">▲ FRENTE</span>${flechaSVG(V.svg)}</div>
+        <div class="mtxt"><div class="big">${V.num!==""?`<b>${V.num}</b> `:""}${V.big}</div><div class="dir">${esc(V.dir)}</div><div class="how">${esc(V.how)}</div></div></div>
+      <div class="beats" aria-label="Tiempos de esta parte">${tiraTiempos(i,V,bi)}</div>
+      <div class="with">${esc(conQuien(i,me))}</div>
+      <div class="next">${nextHTML}</div>`;
+  }
+  draw();
+}
+
+/* ================= Editor ================= */
+function opciones(obj,val,fn){return Object.entries(obj).map(([k,v])=>`<option value="${k}"${String(val)===k?" selected":""}>${esc(fn?fn(v):v)}</option>`).join("")}
+function opcionesMov(val){const cats={};Object.entries(MOV).forEach(([k,m])=>(cats[m.cat]=cats[m.cat]||[]).push([k,m]));
+  return Object.entries(cats).map(([c,l])=>`<optgroup label="${c}">${l.map(([k,m])=>`<option value="${k}"${val===k?" selected":""}>${m.nombre}</option>`).join("")}</optgroup>`).join("")}
+function opcionesPatron(){const cats={};PATRONES.forEach((p,i)=>(cats[p.cat]=cats[p.cat]||[]).push([i,p]));
+  return `<option value="">Elegir un patrón…</option>`+Object.entries(cats).map(([c,l])=>`<optgroup label="${c}">${l.map(([i,p])=>`<option value="${i}">${p.nombre}</option>`).join("")}</optgroup>`).join("")}
+
+function renderEditor(){
+  const ed=$("editor");ed.hidden=!editing;document.body.classList.toggle("editing",editing);
+  if(!editing)return;
+  const est=dirty[K()]?`<span class="status dirty">Cambios sin guardar</span>`:guardado[K()]?`<span class="status ok">Guardado ${new Date(guardado[K()]).toLocaleString("es-CR",{dateStyle:"short",timeStyle:"short"})}</span>`:`<span class="status">Ejemplo sin guardar</span>`;
+  ed.innerHTML=`
+    <div class="top"><h2>Editar ${{campo:"show de campo",fija:"show en calle fija",calle:"desfile"}[modo]}</h2>${est}</div>
+    <div class="rowbtns">
+      <button class="primary" data-cmd="guardar" ${db&&puedeEditar?"":"disabled"}>Guardar para todos</button>
+      <button data-cmd="descartar" ${dirty[K()]?"":"disabled"}>Descartar cambios</button>
+    </div>
+    ${show.musica||show.custom?`<div class="rowbtns"><span class="hint" style="align-self:center">Cargar coreografía propuesta:</span>${Object.entries(PROPUESTAS).map(([v,n])=>`<button data-cmd="prop" data-v="${v}">${n}</button>`).join("")}</div>`:""}
+    ${db&&puedeEditar?"":`<div class="hint">Desde esta vista no se puede guardar. Los cambios solo se ven en esta pantalla.</div>`}
+    <div class="fields">
+      <label>Título<input type="text" data-f="titulo" value="${esc(show.titulo||"")}"></label>
+      <label>BPM<input type="number" min="40" max="220" data-f="bpm" value="${esc(show.bpm)}"></label>
+      <label>Compás<select data-f="compas">${[2,3,4].map(n=>`<option${+show.compas===n?" selected":""}>${n}</option>`).join("")}</select></label>
+    </div>
+    <div class="hint">Cada parte de la canción tiene sus acciones. Si una persona entra en dos acciones, manda la de más abajo: así puede poner «Toda la banda marca el paso» arriba y luego darle algo distinto a las liras o a una fila. Los instrumentos fijos (cuadrados) solo siguen acciones de «Toda la banda» con todas las filas e hileras: marcar, alto, adelante, atrás o volver al bloque; cualquier otra acción no los mueve.</div>
+    ${show.partes.map((p,i)=>`
+    <details class="part" data-p="${i}"${i===openPart?" open":""}>
+      <summary><span class="n">${i+1}</span><span class="t">${esc(p.nombre||"Parte "+(i+1))}</span><span class="c">T ${D.ini[i]+1}–${D.fin[i]} · ${p.tiempos} t</span></summary>
+      <div class="pbody">
+        <div class="pf">
+          <label>Nombre de la parte<input type="text" data-pf="nombre" value="${esc(p.nombre||"")}"></label>
+          <label>Tiempos<input type="number" min="1" max="256" data-pf="tiempos" value="${p.tiempos}"></label>
+          <label>Compás<select data-pf="compas"><option value="">Igual al show</option>${[2,3,4].map(n=>`<option value="${n}"${+p.compas===n?" selected":""}>${n}/4</option>`).join("")}</select></label>
+        </div>
+        ${modo==="calle"?`<label class="check"><input type="checkbox" data-pf="avance"${p.avance?" checked":""}> Caminando: la banda avanza mientras hace esta parte</label>`:""}
+        <div class="acts">${(p.acciones||[]).map((a,k)=>`
+          <div class="act" data-a="${k}">
+            <div class="lead"><span>Acción ${k+1}</span></div>
+            <select data-af="sec" aria-label="Sección">${opciones(SEL_SEC,a.sec)}</select>
+            <select data-af="fila" aria-label="Filas">${opciones(SEL_FILA,a.fila||"todas",v=>v[0])}</select>
+            <select data-af="hilera" aria-label="Hileras">${opciones(SEL_HIL,a.hilera||"todas",v=>v[0])}</select>
+            <select class="mv" data-af="t" aria-label="Movimiento">${opcionesMov(a.t)}</select>
+            ${MOV[a.t]&&MOV[a.t].n?`<input type="number" min="1" max="32" data-af="n" value="${+a.n||4}" aria-label="Pasos">`:`<span></span>`}
+            <button class="del" data-cmd="delAct" aria-label="Quitar acción ${k+1}">✕</button>
+          </div>`).join("")}
+        </div>
+        <div class="rowbtns"><button data-cmd="addAct">+ Agregar acción</button></div>
+        <div class="patrones">
+          <select data-pat aria-label="Patrón">${opcionesPatron()}</select>
+          <button data-cmd="pat">Agregar patrón</button>
+        </div>
+        <div class="rowbtns">
+          <button data-cmd="up" ${i?"":"disabled"}>↑ Subir</button>
+          <button data-cmd="down" ${i<show.partes.length-1?"":"disabled"}>↓ Bajar</button>
+          <button data-cmd="dup">Duplicar</button>
+          <button data-cmd="delPart" ${show.partes.length>1?"":"disabled"}>Eliminar parte</button>
+        </div>
+      </div>
+    </details>`).join("")}
+    <div class="rowbtns"><button data-cmd="addPart">+ Agregar parte</button></div>`;
+}
+function marcarCambio(reEditor){dirty[K()]=true;prep();renderHeader();renderTimeline();renderGuide();if(reEditor)renderEditor();else actualizarEstado();revisar();ui()}
+function actualizarEstado(){const st=$("editor").querySelector(".status");if(st){st.className="status dirty";st.textContent="Cambios sin guardar"}
+  const d=$("editor").querySelector('[data-cmd="descartar"]');if(d)d.disabled=false;
+  $("editor").querySelectorAll("details.part").forEach((el,i)=>{const s=el.querySelector("summary");s.querySelector(".t").textContent=show.partes[i].nombre||"Parte "+(i+1);s.querySelector(".c").textContent=`T ${D.ini[i]+1}–${D.fin[i]} · ${show.partes[i].tiempos} t`})}
+
+const ed=$("editor");
+ed.addEventListener("toggle",e=>{const d=e.target;if(d.matches("details.part")&&d.open){openPart=+d.dataset.p;
+  ed.querySelectorAll("details.part").forEach(o=>{if(o!==d)o.open=false});seek(D.ini[openPart])}},true);
+ed.addEventListener("input",e=>{const t=e.target;
+  if(t.dataset.f){if(t.dataset.f==="titulo")show.titulo=t.value;else show[t.dataset.f]=+t.value||show[t.dataset.f];marcarCambio(false);return}
+  const pEl=t.closest("[data-p]");if(!pEl)return;const p=show.partes[+pEl.dataset.p];
+  if(t.dataset.pf){if(t.dataset.pf==="avance")p.avance=t.checked;else if(t.dataset.pf==="compas"){if(t.value)p.compas=+t.value;else delete p.compas}else if(t.dataset.pf==="tiempos"){if(!(+t.value>0))return;p.tiempos=+t.value}else p.nombre=t.value;marcarCambio(false);return}
+  const aEl=t.closest("[data-a]");if(aEl&&t.dataset.af){const a=p.acciones[+aEl.dataset.a];
+    if(t.dataset.af==="n"){if(!(+t.value>0))return;a.n=+t.value;marcarCambio(false);return}
+    a[t.dataset.af]=t.value;if(t.dataset.af==="t"&&MOV[t.value].n&&!a.n)a.n=4;marcarCambio(t.dataset.af==="t")}
+});
+ed.addEventListener("click",async e=>{const b=e.target.closest("[data-cmd]");if(!b)return;e.preventDefault();
+  const cmd=b.dataset.cmd, pEl=b.closest("[data-p]"), i=pEl?+pEl.dataset.p:-1, P=show.partes;
+  if(cmd==="guardar")return guardar();
+  if(cmd==="prop"){const k=K();if(dirty[k]&&!b.dataset.ok){b.dataset.ok="1";b.textContent="Toque otra vez: reemplaza sus cambios";return}
+    data[k]=plantilla(cancion,modo,b.dataset.v);show=data[k];dirty[k]=true;openPart=0;count=0;refresh(true);return}
+  if(cmd==="descartar"){const k=K();data[k]=clone(guardadoDatos[k]||plantilla(cancion,modo));show=data[k];dirty[k]=false;refresh(true);return}
+  if(cmd==="addAct"){(P[i].acciones=P[i].acciones||[]).push({sec:"todos",fila:"todas",hilera:"todas",t:"marcar"})}
+  else if(cmd==="delAct"){P[i].acciones.splice(+b.closest("[data-a]").dataset.a,1)}
+  else if(cmd==="pat"){const v=pEl.querySelector("[data-pat]").value;if(v==="")return;(P[i].acciones=P[i].acciones||[]).push(...clone(PATRONES[+v].acc))}
+  else if(cmd==="up"&&i>0){[P[i-1],P[i]]=[P[i],P[i-1]];openPart=i-1}
+  else if(cmd==="down"&&i<P.length-1){[P[i+1],P[i]]=[P[i],P[i+1]];openPart=i+1}
+  else if(cmd==="dup"){P.splice(i+1,0,clone(P[i]));P[i+1].nombre+=" (copia)";openPart=i+1}
+  else if(cmd==="delPart"&&P.length>1){P.splice(i,1);openPart=Math.max(0,i-1)}
+  else if(cmd==="addPart"){P.push({nombre:"Parte "+(P.length+1),tiempos:8,...(modo==="calle"?{avance:true}:{}),acciones:[{sec:"todos",t:"marcar"}]});openPart=P.length-1}
+  else return;
+  marcarCambio(true);if(["up","down","dup","delPart","addPart"].includes(cmd))seek(D.ini[openPart]);
+});
+$("editToggle").onclick=()=>{cerrarSheets();editing=!editing;$("editToggle").setAttribute("aria-pressed",editing);$("editToggle").textContent=editing?"Cerrar editor":"✎ Editar coreografía";
+  openPart=secIdx(Math.min(count,D.total-.001));renderEditor();sizeCanvas();if(editing)$("editor").scrollIntoView({block:"start",behavior:"smooth"})};
+
+/* ================= Guardado compartido ================= */
+function limpio(s){const o=clone(s);o.partes.forEach(p=>{p.acciones=(p.acciones||[]).map(a=>{const r={sec:a.sec,t:a.t};if(a.fila&&a.fila!=="todas")r.fila=a.fila;if(a.hilera&&a.hilera!=="todas")r.hilera=a.hilera;if(MOV[a.t]&&MOV[a.t].n)r.n=+a.n||4;return r});if(!p.avance)delete p.avance});return o}
+async function guardar(){
+  if(!db)return;const m=K(),btn=ed.querySelector('[data-cmd="guardar"]');if(btn){btn.disabled=true;btn.textContent="Guardando…"}
+  const doc={...limpio(data[m]),actualizado:Date.now()};
+  try{await db.doc("shows/"+m).set(doc);guardado[m]=doc.actualizado;guardadoDatos[m]=limpio(data[m]);dirty[m]=false;renderHeader();renderEditor()}
+  catch(err){const st=ed.querySelector(".status");if(st){st.className="status dirty";st.textContent=err&&err.code==="invalid_argument"?"No tiene permiso para guardar":"No se pudo guardar. Intente de nuevo."}
+    if(btn){btn.disabled=false;btn.textContent="Guardar para todos"}}
+}
+(async()=>{
+  try{const u=await window.claude?.use?.("user");puedeEditar=u?await u.canEdit():false}catch(e){}
+  try{db=await window.claude?.use?.("db")}catch(e){db=null}
+  $("rolBox").hidden=!puedeEditar;$("pdfTodosBtn").hidden=!puedeEditar;$("croqBtn").hidden=!puedeEditar;renderCanciones();
+  if(!puedeEditar&&rol!=="estudiante"){rol="estudiante";aplicarRol()}
+  if(db&&puedeEditar){$("editBar").hidden=false}
+  renderVivo();  // en la sección Estudiantes queda oculta por CSS
+  if(!db)return;
+  Object.keys(data).forEach(suscribir);
+  db.doc("banda/croquis").onSnapshot(snap=>{if(!snap.exists||snap.metadata.hasPendingWrites)return;const g=snap.data().filas;if(validarGrid(g))aplicarCroquis(g)},()=>{});
+  db.doc("canciones/lista").onSnapshot(snap=>{const it=snap.exists?(snap.data().items||[]):[];sincronizarLista(it)},()=>{});
+})();
+const suscritas=new Set();
+function suscribir(m){if(!db||suscritas.has(m))return;suscritas.add(m);
+  db.doc("shows/"+m).onSnapshot(snap=>{
+    if(!snap.exists||snap.metadata.hasPendingWrites)return;
+    const d=clone(snap.data());const t=d.actualizado;delete d.actualizado;
+    if(!Array.isArray(d.partes)||!d.partes.length)return;
+    guardadoDatos[m]=clone(d);guardado[m]=t;
+    if(dirty[m])return;
+    data[m]=d;if(m===K()){show=data[m];if(playing)stop();refresh(true)}
+  },()=>{})}
+
+/* ================= Reproducción ================= */
+let actx=null, musicaOn=true;
+function campana(m,t,v){const f=440*Math.pow(2,(m-69)/12);
+  [[1,1,1.6],[2.76,.32,.6],[5.4,.12,.3]].forEach(([r,a,d])=>{const o=actx.createOscillator(),g=actx.createGain();o.type="sine";o.frequency.value=f*r;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.2*a*v,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+d+.05)})}
+function musicaEntre(b){
+  if(!actx||!musicaOn||hasSong||!show.musica||!MUSICA[show.musica])return;
+  const spb=D.spb*(slow?2:1);
+  MUSICA[show.musica].forEach(([bt,m])=>{if(bt>=b-1e-6&&bt<b+1-1e-6)campana(m,actx.currentTime+Math.max(0,(bt-count)*spb),1)})}
+function click(fuerte){if(!actx)return;const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=fuerte?1500:1000;
+  g.gain.setValueAtTime(fuerte?.5:.3,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.06);o.connect(g).connect(actx.destination);o.start();o.stop(actx.currentTime+.07)}
+function seek(c){count=Math.max(0,Math.min(D.total,c));lastBeat=Math.floor(count)-1;if(hasSong)audio.currentTime=count*D.spb;
+  if(loopIdx>=0)loopIdx=secIdx(Math.min(count,D.total-.001));ui()}
+let pre=null, cuentaOn=true;
+try{if(localStorage.getItem("cuenta")==="0")cuentaOn=false}catch(e){}
+function mostrarCuenta(n){const el=$("cuentaIn");el.hidden=!n;if(n){$("cuentaNum").textContent=n;$("clock").textContent=`Cuenta: ${n}`}}
+function asegurarAudio(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(actx&&actx.state==="suspended")actx.resume()}
+function empezarAudio(){if(hasSong){audio.currentTime=count*D.spb;audio.playbackRate=slow?.5:1;audio.play().catch(()=>{})}}
+function arrancar(desde,conCuenta){
+  asegurarAudio();
+  if(desde!=null)seek(desde);else if(count>=D.total)seek(0);
+  playing=true;setPlay(true);lastBeat=Math.floor(count)-1;last=performance.now();pedirPantalla();
+  if(conCuenta??cuentaOn)pre={t0:last,k:-1};else{pre=null;empezarAudio()}
+  requestAnimationFrame(loop);
+}
+function loop(ts){
+  if(!playing)return;
+  if(pre){const e=(ts-pre.t0)/1000/(D.spb*(slow?2:1)),k=Math.floor(e);
+    if(k!==pre.k&&k<4){pre.k=k;click(k===0);mostrarCuenta(k+1)}
+    if(e>=4){pre=null;mostrarCuenta(0);last=ts;empezarAudio()}
+    requestAnimationFrame(loop);return}
+  if(hasSong){count=audio.currentTime/D.spb}else{count+=(ts-last)/1000/D.spb*(slow?.5:1)}
+  last=ts;
+  const b=Math.floor(count);if(b!==lastBeat&&b<D.total){lastBeat=b;if(metro){const ii=secIdx(b);click((b-D.ini[ii])%D.cp[ii]===0)}musicaEntre(b)}
+  if(loopIdx>=0&&count>=D.fin[loopIdx]){count=D.ini[loopIdx];lastBeat=Math.floor(count)-1;if(hasSong)audio.currentTime=count*D.spb}
+  if(count>=D.total){count=D.total;stop()}
+  if(!ahorro||ts-lastUi>110||!playing){lastUi=ts;ui()}
+  requestAnimationFrame(loop);
+}
+const IC_PLAY=`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>`, IC_PAUSE=`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></svg>`;
+function setPlay(on){$("play").innerHTML=on?IC_PAUSE:IC_PLAY;$("play").setAttribute("aria-label",on?"Pausa":"Reproducir")}
+function stop(){playing=false;pre=null;soltarPantalla();mostrarCuenta(0);setPlay(false);if(hasSong)audio.pause();ui()}
+$("play").onclick=()=>{
+  asegurarAudio();
+  if(playing){stop();if(enVivo)emitir("stop");return}
+  if(enVivo&&room&&room.connected()){emitir("play");return}   // todos (incluido este celular) arrancan al recibir la señal
+  arrancar();
+};
+$("restart").onclick=()=>{seek(0);if(enVivo)emitir("seek")};
+$("cuentaBtn").onclick=e=>{cuentaOn=!cuentaOn;e.currentTarget.setAttribute("aria-pressed",cuentaOn);try{localStorage.setItem("cuenta",cuentaOn?"1":"0")}catch(err){}};
+$("musBtn").onclick=e=>{musicaOn=!musicaOn;e.currentTarget.setAttribute("aria-pressed",musicaOn);renderNotaMusica()};
+function renderNotaMusica(){$("musBtn").hidden=!show.musica||hasSong;
+  if(!hasSong)$("songnote").textContent=show.musica&&musicaOn?"Suena la melodía de la lira al tempo del show, junto con el metrónomo. También puede cargar la grabación de la banda.":"Sin canción cargada: se usa el metrónomo al tempo del show."}
+function renderCanciones(){
+  {const C=CANCIONES.find(x=>x.id===cancion);$("cancionAcc").hidden=!puedeEditar;$("borrarBtn").hidden=!(C&&C.def);borrarArmado=false;$("borrarBtn").textContent="Eliminar esta canción"}$("canciones").innerHTML=CANCIONES.map(c=>`<button role="tab" data-c="${c.id}" aria-selected="${c.id===cancion}">${esc(c.titulo)}<small>${esc(c.sub)}</small></button>`).join("");
+  $("canciones").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(b.dataset.c===cancion)return;cancion=b.dataset.c;try{localStorage.setItem("cancion",cancion)}catch(e){};setModo(modo);cerrarSheets()})}
+$("metro").onclick=e=>{metro=!metro;e.currentTarget.setAttribute("aria-pressed",metro)};
+$("slow").onclick=e=>{slow=!slow;e.currentTarget.setAttribute("aria-pressed",slow);if(hasSong)audio.playbackRate=slow?.5:1};
+$("scrub").oninput=e=>seek(+e.target.value);
+$("scrub").onchange=()=>{if(enVivo)emitir("seek")};
+
+/* ================= Ensayo en vivo: el celular del director arranca a todos ================= */
+let room=null, enVivo=false, seguir=true, conectados=0;
+try{if(localStorage.getItem("seguir")==="0")seguir=false}catch(e){}
+function emitir(a){
+  if(!room)return;
+  const data={a,c:cancion,m:modo,pos:+count.toFixed(3),cuenta:cuentaOn,lento:slow};
+  room.emit("ensayo",data).catch(()=>{if(a==="play")arrancar()});
+}
+function recibir(msg){
+  const d=msg.data;if(!d||typeof d!=="object")return;
+  if(msg.sameTab?!enVivo:!seguir)return;
+  const pos=Number(d.pos);
+  if(typeof d.c==="string"&&CANCIONES.some(x=>x.id===d.c)&&MODOS.includes(d.m)&&(d.c!==cancion||d.m!==modo)){
+    cancion=d.c;try{localStorage.setItem("cancion",cancion)}catch(e){}setModo(d.m)}
+  if(d.a==="play"){if(playing)stop();slow=!!d.lento;$("slow").setAttribute("aria-pressed",slow);
+    arrancar(Number.isFinite(pos)?Math.max(0,Math.min(D.total,pos)):0,d.cuenta!==false)}
+  else if(d.a==="stop"){if(playing)stop();if(Number.isFinite(pos))seek(Math.max(0,Math.min(D.total,pos)))}
+  else if(d.a==="seek"){if(!playing&&Number.isFinite(pos))seek(Math.max(0,Math.min(D.total,pos)))}
+}
+function renderVivo(){
+  const box=$("vivo");if(!room){box.hidden=true;return}
+  box.hidden=false;const dirige=puedeEditar&&!esEst(), otros=Math.max(0,conectados-1), con=room.connected();
+  box.classList.toggle("on",con&&(dirige?enVivo:seguir));
+  if(dirige){
+    $("vivoTit").textContent=enVivo?"Dirigiendo el ensayo":"Ensayo en vivo";
+    $("vivoTxt").textContent=!con?"Conectando…":enVivo?`Al tocar ▶ arrancan juntos ${otros} ${otros===1?"celular conectado":"celulares conectados"}, con la cuenta de 4.`:`${otros} ${otros===1?"celular conectado":"celulares conectados"}. Active para arrancarlos a todos desde aquí.`;
+    $("vivoBtn").textContent=enVivo?"Dejar de dirigir":"Dirigir";$("vivoBtn").setAttribute("aria-pressed",enVivo);
+  }else{
+    $("vivoTit").textContent=seguir?"Siguiendo al director":"Práctica libre";
+    $("vivoTxt").textContent=!con?"Conectando…":seguir?"Cuando el director toque ▶, su celular arranca solo, con la cuenta de 4.":"Su celular no sigue al director.";
+    $("vivoBtn").textContent=seguir?"Practicar solo":"Seguir al director";$("vivoBtn").setAttribute("aria-pressed",seguir);
+  }
+}
+$("vivoBtn").onclick=()=>{asegurarAudio();
+  if(puedeEditar&&!esEst()){enVivo=!enVivo}else{seguir=!seguir;try{localStorage.setItem("seguir",seguir?"1":"0")}catch(e){}}
+  renderVivo()};
+document.addEventListener("pointerdown",asegurarAudio,{once:true});
+(async()=>{
+  try{room=await window.claude?.use?.("room")}catch(e){room=null}
+  if(!room)return;
+  room.on("ensayo",recibir,()=>{room=null;enVivo=false;renderVivo()});
+  room.onPeers(ch=>{conectados=ch.peers.length;renderVivo()},()=>{});
+  room.onConnection(()=>renderVivo(),()=>{});
+  renderVivo();
+})();
+$("song").onchange=e=>{const f=e.target.files[0];if(!f)return;audio.src=URL.createObjectURL(f);hasSong=true;metro=false;$("metro").setAttribute("aria-pressed","false");
+  $("songnote").textContent=`Canción: ${f.name}. El tiempo 1 se toma desde el segundo 0 del audio.`;renderNotaMusica();seek(count)};
+
+/* ================= Hoja de ruta en PDF ================= */
+function cargarJsPDF(){return new Promise((res,rej)=>{if(window.jspdf)return res(window.jspdf.jsPDF);
+  const sc=document.createElement("script");sc.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+  sc.onload=()=>window.jspdf?res(window.jspdf.jsPDF):rej(new Error("jspdf"));sc.onerror=()=>rej(new Error("jspdf"));document.head.appendChild(sc)})}
+const pdfTxt=t=>String(t).replace(/[←↑→↓↖↗↘↙↻↺▲]/g,"").replace(/[^\x09\x0A\x20-\x7E\xA0-\xFF–—…“”‘’]/g,"").replace(/\s+/g," ").replace(/\s+·\s*$/,"").trim();
+const C_NAVY=[27,37,80], C_GOLD=[240,192,80], C_MUTED=[90,99,119], C_LINE=[214,219,228], C_SUNK=[238,240,244];
+const hexRGB=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+function flechaPDF(doc,cx,cy,r,I){
+  doc.setFillColor(...C_NAVY);doc.roundedRect(cx-r,cy-r,2*r,2*r,2.2,2.2,"F");
+  doc.setDrawColor(...C_GOLD);doc.setFillColor(...C_GOLD);doc.setLineCap("round");
+  const R=r*.62;
+  if(I.tipo==="quieto"){doc.circle(cx,cy,r*.22,"F");doc.setLineWidth(.5);doc.circle(cx,cy,r*.5,"S");return}
+  if(I.tipo==="giro"){const s=I.sentido||1,pts=[];for(let k=0;k<=40;k++){const a=(-150+300*k/40)*Math.PI/180;pts.push([cx+s*R*Math.cos(a),cy+R*Math.sin(a)])}
+    doc.setLineWidth(r*.16);for(let k=1;k<pts.length;k++)doc.line(pts[k-1][0],pts[k-1][1],pts[k][0],pts[k][1]);
+    const a=150*Math.PI/180,tx=-Math.sin(a)*s,ty=Math.cos(a),ex=pts[40][0],ey=pts[40][1],px=-ty,py=tx,L=r*.34,W=r*.26;
+    doc.triangle(ex+tx*L,ey+ty*L,ex+px*W,ey+py*W,ex-px*W,ey-py*W,"F");return}
+  const dx=Math.cos(I.ang),dy=Math.sin(I.ang),px=-dy,py=dx;
+  doc.setLineWidth(r*.2);doc.line(cx-dx*R,cy-dy*R,cx+dx*R*.25,cy+dy*R*.25);
+  const tip=[cx+dx*R,cy+dy*R],base=[cx+dx*R*.1,cy+dy*R*.1];
+  doc.triangle(tip[0],tip[1],base[0]+px*R*.55,base[1]+py*R*.55,base[0]-px*R*.55,base[1]-py*R*.55,"F");
+}
+function hojaPDF(doc,j,nombre){
+  const W=215.9,M=14,p={...PERS[j],nombre:nombre||PERS[j].nombre},sec=SEC[p.sec];let y;
+  const pie=()=>{doc.setFontSize(8);doc.setTextColor(...C_MUTED);doc.text(pdfTxt(`${p.nombre} · ${show.titulo} · ${LUGAR_CORTO[modo]}`),M,272);doc.text("Pág. "+doc.internal.getNumberOfPages(),W-M,272,{align:"right"})};
+  // encabezado
+  doc.setFillColor(...C_NAVY);doc.rect(0,0,W,38,"F");
+  doc.setTextColor(...C_GOLD);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text("HOJA DE RUTA · BANDA",M,11);
+  doc.setTextColor(255,255,255);doc.setFontSize(24);doc.text(pdfTxt(p.nombre),M,23);
+  doc.setFont("helvetica","normal");doc.setFontSize(10);
+  doc.text(pdfTxt(`${p.nombre!==PERS[j].nombre?"Suplente de "+PERS[j].nombre+" · ":PERS[j].sup?"Suplente: "+PERS[j].sup+" · ":""}${p.fijo?"Instrumento fijo":sec.uno} · Fila ${p.f}, hilera ${p.h} · ${show.titulo} · ${LUGAR_CORTO[modo]} · ${show.bpm} BPM · ${[...new Set(D.cp)].map(n=>n+"/4").join(" y ")}`),M,31);
+  // mapa del bloque
+  const mx=M,my=46,cw=7,ch=5.2;
+  doc.setFillColor(...C_SUNK);doc.roundedRect(mx,my,5*cw+10,HILERAS*ch+18,3,3,"F");
+  doc.setTextColor(...C_MUTED);doc.setFontSize(7);doc.setFont("helvetica","bold");doc.text("FRENTE",mx+5+2.5*cw,my+6,{align:"center"});
+  doc.setFillColor(...C_MUTED);doc.triangle(mx+5+2.5*cw,my+1.6,mx+3.5+2.5*cw,my+3.4,mx+6.5+2.5*cw,my+3.4,"F");
+  PERS.forEach(q=>{const x=mx+5+(q.f-.5)*cw,yy=my+10+(q.h-.5)*ch,me=q===p;
+    doc.setFillColor(...(me?hexRGB(SEC[q.sec].color):[190,196,208]));
+    if(q.fijo)doc.rect(x-1.3,yy-1.3,2.6,2.6,"F");else doc.circle(x,yy,me?1.8:1.3,"F");
+    if(me){doc.setDrawColor(...C_NAVY);doc.setLineWidth(.5);doc.circle(x,yy,3,"S")}});
+  // cómo leer
+  const tx=mx+5*cw+18;doc.setTextColor(...C_NAVY);doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text("Cómo leer esta hoja",tx,my+5);
+  doc.setFont("helvetica","normal");doc.setFontSize(9.5);doc.setTextColor(40,46,64);
+  const tips=["La flecha se lee mirando al frente (al público, o hacia donde camina el desfile).","Cada paso mide unos 60 cm. Los «pasos cortos» se dan uno en cada tiempo.",
+    "En la tira de tiempos: cuadro oscuro = dé un paso en ese tiempo; cuadro claro = marque el paso en su lugar.","El mapa de la izquierda muestra su puesto inicial en el bloque."];
+  let ty=my+12;tips.forEach(t=>{const l=doc.splitTextToSize("• "+t,W-M-tx);doc.text(l,tx,ty);ty+=l.length*4.4+1.5});
+  y=my+HILERAS*ch+26;
+  doc.setDrawColor(...C_LINE);doc.setLineWidth(.3);doc.line(M,y-4,W-M,y-4);
+  // partes
+  show.partes.forEach((s,i)=>{
+    const V=vis(i,j), T=s.tiempos, c1=D.mIni[i]+1, c2=D.mIni[i]+Math.ceil(T/D.cp[i]);
+    const tit=pdfTxt(`${V.num!==""?V.num+" "+V.big:V.big} · ${V.dir}`);
+    doc.setFontSize(9);const how=doc.splitTextToSize(pdfTxt(V.how+(conQuien(i,j)?" · "+conQuien(i,j):"")),W-M-(M+30));
+    const nfil=Math.ceil(T/18), h=12+how.length*4+nfil*6.5+4;
+    if(y+h>266){pie();doc.addPage();y=18;doc.setFontSize(10);doc.setTextColor(...C_MUTED);doc.setFont("helvetica","bold");doc.text(pdfTxt(`${p.nombre} · continuación`),M,12)}
+    flechaPDF(doc,M+9,y+8,8,V.svg);
+    const x0=M+24;
+    doc.setTextColor(...C_NAVY);doc.setFont("helvetica","bold");doc.setFontSize(12.5);doc.text(tit,x0,y+4);
+    doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...C_MUTED);
+    doc.text(pdfTxt(`${i+1}. ${s.nombre} · tiempos ${D.ini[i]+1}–${D.fin[i]} · compases ${c1}–${c2}`),x0,y+9);
+    doc.setTextColor(40,46,64);doc.text(how,x0,y+13.5);
+    let by=y+13.5+how.length*4;
+    for(let b=0;b<T;b++){const col=b%18,row=Math.floor(b/18),bx=x0+col*8.2,yy=by+row*6.5,paso=esPaso(b,V.n,T);
+      if(paso){doc.setFillColor(...C_NAVY);doc.roundedRect(bx,yy,7.4,5.6,1,1,"F");doc.setTextColor(255,255,255)}
+      else{doc.setFillColor(...C_SUNK);doc.roundedRect(bx,yy,7.4,5.6,1,1,"F");doc.setTextColor(...C_MUTED)}
+      doc.setFontSize(7);doc.setFont("helvetica","bold");doc.text(String(b+1),bx+3.7,yy+3.9,{align:"center"})}
+    doc.setFont("helvetica","normal");
+    y=by+nfil*6.5+5;doc.setDrawColor(...C_LINE);doc.setLineWidth(.3);doc.line(x0,y-2.5,W-M,y-2.5);
+  });
+  pie();
+}
+async function descargarPDF(todosEst){
+  const note=$("pdfNote"),btn=todosEst?$("pdfTodosBtn"):$("pdfBtn"),txt=btn.textContent;
+  let dl=null;try{dl=await window.claude?.use?.("downloads")}catch(e){}
+  if(!dl){note.textContent="La descarga no está disponible en esta vista. Abra la página en Claude e intente de nuevo.";return}
+  btn.disabled=true;btn.textContent="Preparando PDF…";
+  try{
+    const JsPDF=await cargarJsPDF(), doc=new JsPDF({unit:"mm",format:"letter",compress:true});
+    const lista=todosEst?PERS.map((_,j)=>j):[selIdx()];
+    lista.forEach((j,k)=>{if(k)doc.addPage();hojaPDF(doc,j,todosEst?null:nomVis(j))});
+    const nom=todosEst?"Toda la banda":nomVis(lista[0]);
+    await dl.save({filename:`Hoja de ruta - ${nom} - ${show.titulo} (${LUGAR_CORTO[modo]}).pdf`,data:doc.output("arraybuffer")});
+    note.textContent="Listo: el PDF quedó guardado.";
+  }catch(e){note.textContent=e&&e.code==="declined"?"Descarga cancelada.":e&&e.message==="jspdf"?"No se pudo preparar el PDF. Revise la conexión a internet e intente de nuevo.":"No se pudo descargar el PDF. Intente de nuevo."}
+  btn.disabled=false;btn.textContent=txt;
+}
+$("pdfBtn").onclick=()=>{if(selIdx()<0){$("pdfNote").textContent="Primero escoja un estudiante arriba.";return}descargarPDF(false)};
+$("pdfTodosBtn").onclick=()=>descargarPDF(true);
+
+/* ================= Canciones propias ================= */
+const TIPOS=["Intro","Estrofa","Coro","Puente","Interludio","Final"];
+const PARES={
+  campo:{Intro:[[LOLA,LVOL],[TPA,TPV]],Estrofa:[[[...LESC,...TPA],VOLVER],[[SW24("impares")],[SW24("impares")]],[DIAG,VOLVER],[[SW24("pares")],[SW24("pares")]]],
+    Coro:[[ESPEJO,VOLVER],[CIRC2,VOLVER],[RUEDA2,RUEDA2I],[[...LOLA,...BINT],VOLVER]],Puente:[[OLA,VOLVER],[DIAG,VOLVER]],Interludio:[[TPA,TPV],[LOLA,LVOL]],Final:[[OLA,VOLVER]]},
+  calle:{Intro:[[LOLA,LVOL],[TPA,TPV]],Estrofa:[[LESC,LVOL],[[SW24("impares")],[SW24("impares")]],[[...LESC,...TPA],VOLVER],[[SW24("pares")],[SW24("pares")]]],
+    Coro:[[[SW15("impares")],[SW15("impares")]],[LEXT,LEXTC],[[SW15("pares")],[SW15("pares")]],[[...LOLA,...TPA],VOLVER]],Puente:[[OLA,VOLVER],[LEXT,LEXTC]],Interludio:[[TPA,TPV]],Final:[[OLA,VOLVER]]}};
+function generarShow(def,m,v){
+  const cp=+def.compas||4, veces={}, total={};
+  def.bloques.forEach(b=>total[b.tipo]=(total[b.tipo]||0)+1);
+  const partes=[];
+  def.bloques.forEach((b,bi)=>{veces[b.tipo]=(veces[b.tipo]||0)+1;const base=total[b.tipo]>1?`${b.tipo} ${veces[b.tipo]}`:b.tipo;
+    const cpB=+b.compas||cp, por=Math.max(1,Math.round(8/cpB)), T=Math.max(1,Math.round(+b.tiempos||(Math.max(1,b.compases|0)*cpB))), tch=por*cpB, k=Math.ceil(T/tch);
+    for(let c=0;c<k;c++){const t=Math.min(tch,T-c*tch);partes.push({nombre:k>1?`${base} · ${c+1}/${k}`:base,tiempos:t,...(cpB!==cp?{compas:cpB}:{}),tipo:b.tipo,bloque:bi,c,k,acciones:clone(MARCA)})}});
+  const pool=PARES[m==="campo"?"campo":"calle"], giro={};
+  if(v!=="vacia")def.bloques.forEach((b,bi)=>{if(v==="basica"&&b.tipo!=="Coro")return;
+    const ps=partes.filter(p=>p.bloque===bi);
+    for(let c=0;c+1<ps.length;c+=2){const lista=pool[b.tipo]||pool.Estrofa;const g=giro[b.tipo]=(giro[b.tipo]||0);giro[b.tipo]++;
+      const [ida,vuelta]=lista[g%lista.length];ps[c].acciones=clone(ida);ps[c+1].acciones=clone(vuelta);ps[c].par=ps[c+1].par=bi+"-"+c}});
+  partes[partes.length-1].acciones=partes[partes.length-1].par?partes[partes.length-1].acciones:[A("todos","alto")];
+  const sh={titulo:def.titulo,bpm:+def.bpm||120,compas:cp,custom:def.id,propuesta:v,...(MUSICA[def.id]?{musica:def.id}:{}),...(m==="campo"?{}:{ancho:7}),
+    partes:partes.map((p,i)=>({nombre:p.nombre,tiempos:p.tiempos,...(p.compas?{compas:p.compas}:{}),...(m==="calle"?{avance:i<partes.length-1}:{}),acciones:p.acciones,par:p.par}))};
+  // revisión: quita los pares que choquen, se salgan o pidan más pasos que tiempos
+  for(let intento=0;intento<40;intento++){const bad=revisarShow(sh,m);if(bad<0)break;
+    const par=sh.partes[bad].par;sh.partes.forEach(p=>{if(par?p.par===par:p===sh.partes[bad]){p.acciones=clone(MARCA);delete p.par}})}
+  sh.partes.forEach(p=>delete p.par);
+  return sh;
+}
+function revisarShow(sh,m){
+  const sv={show,modo,D};show=sh;modo=m;let bad=-1;
+  try{prep();
+    show.partes.forEach((p,i)=>{if(bad<0&&D.ns[i].some(n=>n>p.tiempos))bad=i});
+    for(let c=0;c<=D.total&&bad<0;c+=.25){const cc=Math.min(c,D.total-1e-4),P=posAt(cc),i=secIdx(cc);
+      for(let a=0;a<P.length&&bad<0;a++){const q=P[a];
+        if(m==="campo"?(Math.abs(q[0])>14||Math.abs(q[1])>7.5):Math.abs(q[0])>ancho()/2-.4){bad=i;break}
+        for(let b=a+1;b<P.length;b++)if(Math.hypot(q[0]-P[b][0],q[1]-P[b][1])<.5){bad=i;break}}}
+  }finally{show=sv.show;modo=sv.modo;D=sv.D}
+  return bad;
+}
+function agregarCancion(def){
+  if(CANCIONES.some(x=>x.id===def.id))return;
+  const tipos=[];def.bloques.forEach(b=>{if(tipos[tipos.length-1]!==b.tipo)tipos.push(b.tipo)});
+  CANCIONES.splice(CANCIONES.length-1,0,{id:def.id,titulo:def.titulo,sub:`${def.bpm} BPM · ${def.compas}/4 · ${def.bloques.reduce((a,b)=>a+b.compases,0)} compases`,def});
+  MODOS.forEach(m=>{const k=KEY(def.id,m);if(!data[k]){data[k]=plantilla(def.id,m,def.prop||"dinamica");guardado[k]=null;dirty[k]=false;guardadoDatos[k]=null}if(typeof suscribir==="function")suscribir(k)});
+}
+function sincronizarLista(items){
+  const ids=new Set();(items||[]).forEach(d=>{if(d&&typeof d.id==="string"&&/^c-[a-z0-9]+$/.test(d.id)&&Array.isArray(d.bloques)&&d.bloques.length){ids.add(d.id);agregarCancion(d)}});
+  for(let i=CANCIONES.length-1;i>=0;i--){const c=CANCIONES[i];if(c.def&&!ids.has(c.id))CANCIONES.splice(i,1)}
+  if(!CANCIONES.some(c=>c.id===cancion)){cancion=CANCIONES[0].id;setModo(modo)}else renderCanciones();
+}
+let wiz=null;
+const PLANTILLAS={"Intro · Estrofa · Coro · Estrofa · Coro · Final":[["Intro",4],["Estrofa",8],["Coro",8],["Estrofa",8],["Coro",8],["Final",4]],
+  "Coro · Estrofa · Coro":[["Coro",8],["Estrofa",8],["Coro",8]],"Intro · Coro · Puente · Coro · Final":[["Intro",4],["Coro",8],["Puente",8],["Coro",8],["Final",4]]};
+function abrirWiz(){cerrarSheets();wiz={paso:1,titulo:"",bpm:120,compas:2,bloques:[],prop:"dinamica",err:""};renderWiz();$("wiz").hidden=false}
+function cerrarWiz(){$("wiz").hidden=true;wiz=null}
+function resumenWiz(){const comp=wiz.bloques.reduce((a,b)=>a+b.compases,0),t=comp*wiz.compas,sg=Math.round(t*60/wiz.bpm);
+  return `<div class="resumen"><span><b>${comp}</b>compases</span><span><b>${t}</b>tiempos</span><span><b>${Math.floor(sg/60)}:${String(sg%60).padStart(2,"0")}</b>min</span></div>`}
+function renderWiz(){
+  const W=wiz, c=$("wizCard"), pasos=`<div class="wiz-steps">${[1,2,3].map(n=>`<i class="${n<=W.paso?"on":""}"></i>`).join("")}</div>`;
+  const top=`<div class="wiz-top">${pasos}<button data-w="cerrar" aria-label="Cerrar">✕</button></div>`;
+  let body="";
+  if(W.paso===1)body=`<h3>Nueva canción</h3><div class="sub">Paso 1 de 3 · Datos de la canción</div>
+    <label class="f">Nombre de la canción<input class="big" id="wTit" type="text" maxlength="60" placeholder="Ej.: Feliz Navidad" value="${esc(W.titulo)}"></label>
+    <div class="f" style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--muted)">Tempo (BPM)
+      <div class="stepper"><button data-w="bpm" data-d="-5" aria-label="Menos 5">−5</button><button data-w="bpm" data-d="-1" aria-label="Menos 1">−</button><output>${W.bpm}</output><button data-w="bpm" data-d="1" aria-label="Más 1">+</button><button data-w="bpm" data-d="5" aria-label="Más 5">+5</button></div></div>
+    <div class="f" style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--muted)">Compás
+      <div class="segm">${[2,3,4].map(n=>`<button data-w="compas" data-v="${n}" aria-pressed="${W.compas===n}">${n}/4</button>`).join("")}</div></div>`;
+  if(W.paso===2)body=`<h3>${esc(W.titulo)}</h3><div class="sub">Paso 2 de 3 · Partes de la canción, en orden</div>
+    <div><div class="label" style="margin-bottom:6px">Empezar con una plantilla</div><div class="plantillas">${Object.keys(PLANTILLAS).map(k=>`<button data-w="plant" data-k="${esc(k)}">${esc(k)}</button>`).join("")}</div></div>
+    <div class="bloques">${W.bloques.length?W.bloques.map((b,i)=>`<div class="bloque"><span class="n">${i+1}</span>
+      <select data-w="tipo" data-i="${i}" aria-label="Tipo de parte">${TIPOS.map(t=>`<option${t===b.tipo?" selected":""}>${t}</option>`).join("")}</select>
+      <div><div class="stepper"><button data-w="comp" data-i="${i}" data-d="-1" aria-label="Menos compases">−</button><output>${b.compases}</output><button data-w="comp" data-i="${i}" data-d="1" aria-label="Más compases">+</button></div><small>compases</small></div>
+      <button class="x" data-w="quitar" data-i="${i}" aria-label="Quitar parte ${i+1}">✕</button></div>`).join(""):`<div class="note">Toque una plantilla o agregue partes una por una.</div>`}</div>
+    <div class="addb">${TIPOS.map(t=>`<button data-w="add" data-t="${t}">＋ ${t}</button>`).join("")}</div>
+    ${resumenWiz()}`;
+  if(W.paso===3)body=`<h3>${esc(W.titulo)}</h3><div class="sub">Paso 3 de 3 · ¿Cómo empezamos la coreografía?</div>
+    <div class="opc">
+      <button data-w="prop" data-v="dinamica" aria-pressed="${W.prop==="dinamica"}">Dinámica (recomendada)<small>Movimientos en cada parte: espejos, cruces de liras, círculos y escalonados. Se revisa sola para que nadie choque.</small></button>
+      <button data-w="prop" data-v="basica" aria-pressed="${W.prop==="basica"}">Básica<small>Solo se mueven en los coros; el resto marca el paso.</small></button>
+      <button data-w="prop" data-v="vacia" aria-pressed="${W.prop==="vacia"}">Vacía<small>Todos marcan el paso. Usted arma los movimientos en el editor.</small></button>
+    </div>${resumenWiz()}
+    <div class="note">Se crea para cancha, calle fija y desfile. Después puede ajustar cualquier parte en «Editar coreografía».</div>`;
+  const nav=`<div class="wiz-nav">${W.paso>1?`<button data-w="atras">Atrás</button>`:""}<button class="primary" data-w="sig">${W.paso<3?"Siguiente":"Crear canción"}</button></div>`;
+  c.innerHTML=top+body+(W.err?`<div class="err">${esc(W.err)}</div>`:"")+nav;
+}
+$("wiz").addEventListener("input",e=>{if(e.target.id==="wTit")wiz.titulo=e.target.value});
+$("wiz").addEventListener("change",e=>{const t=e.target;if(t.dataset.w==="tipo"){wiz.bloques[+t.dataset.i].tipo=t.value;renderWiz()}});
+$("wiz").addEventListener("click",async e=>{const b=e.target.closest("[data-w]");if(!b||!wiz){if(e.target===$("wiz"))cerrarWiz();return}
+  const W=wiz,a=b.dataset.w;W.err="";
+  if(a==="cerrar")return cerrarWiz();
+  if(a==="bpm")W.bpm=Math.max(40,Math.min(220,W.bpm+ +b.dataset.d));
+  if(a==="compas")W.compas=+b.dataset.v;
+  if(a==="plant")W.bloques=PLANTILLAS[b.dataset.k].map(([tipo,compases])=>({tipo,compases}));
+  if(a==="add")W.bloques.push({tipo:b.dataset.t,compases:b.dataset.t==="Intro"||b.dataset.t==="Final"?4:8});
+  if(a==="comp"){const x=W.bloques[+b.dataset.i];x.compases=Math.max(1,Math.min(64,x.compases+ +b.dataset.d))}
+  if(a==="quitar")W.bloques.splice(+b.dataset.i,1);
+  if(a==="prop")W.prop=b.dataset.v;
+  if(a==="atras")W.paso--;
+  if(a==="sig"){
+    if(W.paso===1&&!W.titulo.trim()){W.err="Escriba el nombre de la canción.";renderWiz();return}
+    if(W.paso===2&&!W.bloques.length){W.err="Agregue al menos una parte.";renderWiz();return}
+    if(W.paso<3)W.paso++;else{b.disabled=true;b.textContent="Creando…";await crearCancion();return}
+  }
+  renderWiz();
+});
+async function crearCancion(){
+  const W=wiz,def={id:"c-"+Date.now().toString(36),titulo:W.titulo.trim().slice(0,60),bpm:W.bpm,compas:W.compas,bloques:W.bloques.map(b=>({tipo:b.tipo,compases:b.compases})),prop:W.prop};
+  agregarCancion(def);
+  if(db&&puedeEditar){try{
+    const snap=await db.doc("canciones/lista").get(),items=snap.exists?(snap.data().items||[]).slice():[];items.push(def);
+    await db.doc("canciones/lista").set({items});
+    for(const m of MODOS){const k=KEY(def.id,m),doc={...limpio(data[k]),actualizado:Date.now()};await db.doc("shows/"+k).set(doc);guardado[k]=doc.actualizado;guardadoDatos[k]=limpio(data[k])}
+  }catch(err){}}
+  cerrarWiz();cancion=def.id;try{localStorage.setItem("cancion",cancion)}catch(e){}setModo(modo);
+}
+let borrarArmado=false;
+$("nuevaBtn").onclick=abrirWiz;
+$("borrarBtn").onclick=async()=>{const C=CANCIONES.find(x=>x.id===cancion);if(!C||!C.def)return;
+  if(!borrarArmado){borrarArmado=true;$("borrarBtn").textContent="Toque otra vez para eliminar «"+C.titulo+"»";return}
+  borrarArmado=false;
+  if(db&&puedeEditar){try{const snap=await db.doc("canciones/lista").get(),items=(snap.exists?snap.data().items||[]:[]).filter(d=>d.id!==C.id);
+    await db.doc("canciones/lista").set({items});for(const m of MODOS)await db.doc("shows/"+KEY(C.id,m)).delete()}catch(e){}}
+  const i=CANCIONES.indexOf(C);if(i>=0)CANCIONES.splice(i,1);cancion=CANCIONES[0].id;cerrarSheets();setModo(modo)};
+
+/* ================= Integrantes y suplentes ================= */
+let cq=null;
+function gridActual(){const g=Array.from({length:HILERAS},()=>Array(FILAS).fill(null));PERS.forEach(p=>g[p.h-1][p.f-1]={n:p.nombre,s:p.sup||""});return g}
+function abrirCroq(){cerrarSheets();cq={g:gridActual(),sel:null,mover:false,msg:""};renderCroq();$("croq").hidden=false}
+function cerrarCroq(){$("croq").hidden=true;cq=null}
+function renderCroq(){
+  const C=cq,g=C.g;let filas="";
+  for(let h=1;h<=HILERAS;h++){
+    if(h===1||h===6||h===11)filas+=`<div class="cq-row-l">${h===1?"Liras":h===6?"Tambores":"Bombos"}</div>`;
+    for(let f=1;f<=FILAS;f++){const c=g[h-1][f-1],sel=C.sel&&C.sel[0]===h&&C.sel[1]===f,col=SEC[secDe(h)].color;
+      filas+=`<button data-h="${h}" data-f="${f}" class="${c?"":"vacio"}${h===HILERA_FIJA?" fijo":""}${sel?" sel":""}" style="--c:${col}" aria-label="Fila ${f}, hilera ${h}: ${c?esc(c.n):"vacío"}">${c?`<span>${esc(c.n)}</span>${c.s?`<small>S: ${esc(c.s)}</small>`:""}`:`<span>vacío</span>`}</button>`}}
+  let ed=`<div class="note">Toque un puesto para cambiar el nombre, ponerle suplente o moverlo.</div>`;
+  if(C.sel){const [h,f]=C.sel,c=g[h-1][f-1]||{n:"",s:""};
+    ed=`<div class="cq-edit"><b>Fila ${f}, hilera ${h} · ${h===HILERA_FIJA?"Instrumento fijo":SEC[secDe(h)].uno}</b>
+      <label class="f">Nombre<input id="cqN" type="text" maxlength="40" value="${esc(c.n)}" placeholder="Puesto vacío"></label>
+      <label class="f">Suplente (opcional)<input id="cqS" type="text" maxlength="40" value="${esc(c.s)}" placeholder="Quien lo reemplaza si falta"></label>
+      <div class="two"><button data-c="mover"${C.mover?' aria-pressed="true"':""}>⇄ Intercambiar con otro puesto</button><button data-c="vaciar">Vaciar puesto</button></div>
+      ${C.mover?`<div class="cq-msg">Toque el puesto con el que lo quiere intercambiar.</div>`:""}</div>`}
+  $("croqCard").innerHTML=`<div class="wiz-top"><h3>Integrantes</h3><button data-c="cerrar" aria-label="Cerrar">✕</button></div>
+    <div class="cq-fr">▲ FRENTE · DIRECTOR</div><div class="cq">${filas}</div>${ed}
+    ${C.msg?`<div class="cq-msg">${esc(C.msg)}</div>`:""}
+    <div class="wiz-nav"><button data-c="cerrar">Cancelar</button><button class="primary" data-c="guardar">Guardar cambios</button></div>`;
+}
+function leerCampos(){if(!cq||!cq.sel)return;const [h,f]=cq.sel,n=($("cqN")?.value||"").trim().slice(0,40),sv=($("cqS")?.value||"").trim().slice(0,40);
+  cq.g[h-1][f-1]=n?{n,s:sv}:null}
+$("croq").addEventListener("click",async e=>{if(!cq)return;if(e.target===$("croq"))return cerrarCroq();
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.h){const h=+b.dataset.h,f=+b.dataset.f;leerCampos();cq.msg="";
+    if(cq.mover&&cq.sel){const [h0,f0]=cq.sel,t=cq.g[h0-1][f0-1];cq.g[h0-1][f0-1]=cq.g[h-1][f-1];cq.g[h-1][f-1]=t;cq.mover=false;cq.msg="Puestos intercambiados."}
+    cq.sel=[h,f];renderCroq();return}
+  const c=b.dataset.c;
+  if(c==="cerrar")return cerrarCroq();
+  if(c==="mover"){leerCampos();cq.mover=!cq.mover;renderCroq();return}
+  if(c==="vaciar"){cq.g[cq.sel[0]-1][cq.sel[1]-1]=null;renderCroq();return}
+  if(c==="guardar"){leerCampos();const g=cq.g;
+    if(!g.some(r=>r.some(Boolean))){cq.msg="La banda no puede quedar vacía.";renderCroq();return}
+    b.disabled=true;b.textContent="Guardando…";
+    if(db&&puedeEditar){try{await db.doc("banda/croquis").set({filas:g,actualizado:Date.now()})}catch(err){cq.msg="No se pudo guardar. Intente de nuevo.";renderCroq();return}}
+    aplicarCroquis(g);cerrarCroq()}
+});
+$("croq").addEventListener("input",e=>{if(e.target.id==="cqN"||e.target.id==="cqS")leerCampos()});
+function validarGrid(g){return Array.isArray(g)&&g.length===HILERAS&&g.every(r=>Array.isArray(r)&&r.length===FILAS&&r.every(c=>c===null||(c&&typeof c.n==="string"&&c.n.length<=40&&(c.s===undefined||typeof c.s==="string"&&c.s.length<=40))))&&g.some(r=>r.some(Boolean))}
+function aplicarCroquis(g){
+  construirPERS(g);camCache={};movCache.clear();
+  $("selN").innerHTML="";PERS.map(p=>p).sort((a,b)=>a.nombre.localeCompare(b.nombre,"es")).forEach(p=>$("selN").add(new Option(p.nombre,p.h+"-"+p.f)));
+  renderNombres();renderPuesto();refresh(false);
+}
+$("croqBtn").onclick=abrirCroq;
+
+/* ================= Pantalla encendida y ahorro de batería ================= */
+let wl=null, ahorro=false, lastUi=0;
+try{ahorro=localStorage.getItem("ahorro")==="1"}catch(e){}
+async function pedirPantalla(){try{if(navigator.wakeLock&&!wl){wl=await navigator.wakeLock.request("screen");wl.addEventListener("release",()=>{wl=null})}}catch(e){}}
+function soltarPantalla(){try{if(wl)wl.release()}catch(e){}wl=null}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&playing)pedirPantalla()});
+$("ahorroBtn").onclick=e=>{ahorro=!ahorro;e.currentTarget.setAttribute("aria-pressed",ahorro);try{localStorage.setItem("ahorro",ahorro?"1":"0")}catch(err){}sizeCanvas()};
+$("ahorroBtn").setAttribute("aria-pressed",ahorro);
+
+/* ================= Menús desplegables ================= */
+let abierta=null;
+function abrirSheet(id){abierta=(abierta===id)?null:id;
+  ["sheetShow","sheetQuien","sheetMenu"].forEach(s=>$(s).hidden=s!==abierta);
+  document.querySelectorAll("[data-sheet]").forEach(b=>b.setAttribute("aria-expanded",b.dataset.sheet===abierta));
+  $("backdrop").hidden=!abierta}
+const cerrarSheets=()=>{if(abierta)abrirSheet(abierta)};
+document.querySelectorAll("[data-sheet]").forEach(b=>b.onclick=()=>abrirSheet(b.dataset.sheet));
+$("backdrop").onclick=cerrarSheets;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")cerrarSheets()});
+const LUGAR_CORTO={campo:"Cancha",fija:"Calle fija",calle:"Desfile"};
+function renderNombres(){
+  const cuenta={};PERS.forEach(p=>cuenta[p.nombre]=(cuenta[p.nombre]||0)+1);
+  $("nombres").innerHTML=["liras","tambores","bombos"].map(sec=>`<div><div class="ng"><i style="background:${SEC[sec].color}"></i>${SEC[sec].nombre}</div><div class="nbtns">${
+    PERS.map((p,j)=>[p,j]).filter(([p])=>p.sec===sec).sort((a,b)=>a[0].nombre.localeCompare(b[0].nombre,"es"))
+    .map(([p,j])=>`<button data-j="${j}" aria-pressed="false">${esc(p.nombre)}${cuenta[p.nombre]>1||p.fijo?`<small>${p.fijo?"Fijo · ":""}Fila ${p.f}, hilera ${p.h}</small>`:""}</button>`
+      +(p.sup?`<button data-j="${j}" data-sup="1" aria-pressed="false">${esc(p.sup)}<small>Suplente de ${esc(p.nombre)}</small></button>`:"")).join("")}</div></div>`).join("");
+  $("nombres").querySelectorAll("button").forEach(b=>b.onclick=()=>{const p=PERS[+b.dataset.j];selH=p.h;selF=p.f;todos=false;selSup=!!b.dataset.sup;
+    guardarPuesto();cerrarSheets();renderPuesto();renderGuide();ui()});
+}
+renderNombres();
+
+/* ================= Sección Estudiantes ================= */
+$("loopBtn").onclick=e=>{loopIdx=loopIdx>=0?-1:secIdx(Math.min(count,D.total-.001));e.currentTarget.setAttribute("aria-pressed",loopIdx>=0)};
+document.querySelectorAll("#vistaBox button").forEach(b=>b.onclick=()=>{vista=b.dataset.v;try{localStorage.setItem("vista",vista)}catch(e){};aplicarRol()});
+document.querySelectorAll(".rol button").forEach(b=>b.onclick=()=>{rol=b.dataset.rol;try{localStorage.setItem("rol",rol)}catch(e){};
+  if(esEst()&&editing)$("editToggle").click();aplicarRol()});
+function aplicarRol(){
+  const est=esEst();document.body.classList.toggle("est",est);
+  if(est)todos=false;
+  document.querySelectorAll(".rol button").forEach(b=>b.setAttribute("aria-selected",b.dataset.rol===rol));
+  document.querySelectorAll("#vistaBox button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===vista));
+  $("vistaBox").hidden=!est;
+  $("eyebrow").textContent=est?"Práctica individual":"Guía de desplazamientos";
+  $("puestoHint").textContent=est?"Elija su nombre una vez y la app lo recuerda. La flecha siempre se lee mirando al frente: ↑ es hacia el público o hacia donde camina el desfile.":"También puede tocar un punto en la cancha. Fila 1 es la de la izquierda mirando al frente; hilera 1 es la de adelante, junto al director.";
+  $("quienTitulo").textContent=est?"Toque su nombre":"Ver a un estudiante";
+  if(esEst())enVivo=false;
+  renderVivo();renderPuesto();renderGuide();sizeCanvas();ui();
+}
+
+addEventListener("resize",sizeCanvas);
+document.fonts&&document.fonts.ready.then(draw);
+let tienePuesto=false;try{tienePuesto=!!localStorage.getItem("puesto")}catch(e){}
+setPlay(false);$("cuentaBtn").setAttribute("aria-pressed",cuentaOn);renderPuesto();setModo(modo);aplicarRol();
+if(!tienePuesto&&esEst())abrirSheet("sheetQuien");
+</script>
+
+</body>
+</html>
