@@ -370,7 +370,7 @@ button.danger{color:var(--warn);border-color:var(--warn)}
     <div class="msec" id="percBox" hidden>
       <div class="label">Base de percusión</div>
       <div class="two">
-        <label class="f">Ritmo <select id="styleSel"><option value="merengue">Merengue</option><option value="cumbia">Cumbia</option><option value="salsa">Salsa</option><option value="reggaeton">Reggaetón</option><option value="tambito">Tambito 3/4</option><option value="epico">Épico 3/4</option><option value="vals">Vals 3/4</option><option value="desfile">Desfile</option><option value="marcha">Marcha</option></select></label>
+        <label class="f">Ritmo <select id="styleSel"><option value="orig">Original del arreglo</option><option value="merengue">Merengue</option><option value="cumbia">Cumbia</option><option value="salsa">Salsa</option><option value="reggaeton">Reggaetón</option><option value="tambito">Tambito 3/4</option><option value="epico">Épico 3/4</option><option value="vals">Vals 3/4</option><option value="desfile">Desfile</option><option value="marcha">Marcha</option></select></label>
         <label class="f">Variante <select id="varSel"></select></label>
       </div>
       <div class="chips">
@@ -3556,9 +3556,9 @@ function selectSong(i){
   $('tempo').value=song.tempo;$('tempoOut').textContent=song.tempo;$('tempoMini').textContent=song.tempo;curSpb=60/song.tempo;
   userShift=0;if(!song.fixedKey){try{const v=+localStorage.getItem('lira-shift-'+song.id);if(v&&fits(v))userShift=v}catch(e){}}
   $('grooveWrap').hidden=!song.groove;$('percBox').hidden=!song.groove;$('percBtn').hidden=!song.groove;syncPerc();
-  if(song.groove){curStyle=song.groove;const m3=song.sections[0].meter===3;
-    [...$('styleSel').options].forEach(o=>{const sm=STYLES[o.value].meter||2;o.disabled=(sm===3)!==m3});
-    $('styleSel').value=curStyle;varMode='auto';fillVarSel()}
+  if(song.groove){curStyle=song.groove;styleManual=false;const m3=song.sections[0].meter===3;
+    [...$('styleSel').options].forEach(o=>{if(o.value==='orig'){o.textContent='Original del arreglo ('+origStyleName()+')';return}const sm=STYLES[o.value].meter||2;o.disabled=(sm===3)!==m3});
+    $('styleSel').value='orig';varMode='auto';fillVarSel()}
   try{localStorage.setItem('lira-song',song.id)}catch(e){}
   rebuild();
 }
@@ -3577,13 +3577,14 @@ function rebuild(){
   const keys=[...new Set(song.sections.map(s=>keyName(sectionKey(s))))];
   $('keyName').textContent=keys.join(' · ');
   $('keyUp').disabled=song.fixedKey||!fits(userShift+1);$('keyDown').disabled=song.fixedKey||!fits(userShift-1);
-  $('keyFixed').hidden=!song.fixedKey;
+  const noRoom=!song.fixedKey&&!fits(userShift+1)&&!fits(userShift-1);
+  $('keyFixed').hidden=!(song.fixedKey||noRoom);$('keyFixed').title=noRoom?'Esta pieza ya usa todas las láminas de la lira (de Sol a Sol agudo): no cabe en otro tono.':'Arreglo escrito para el registro de la lira: se toca en este tono.';
   $('keyReset').hidden=userShift===0;
   $('keyMini').textContent=keys.join(' · ');
   selLine=null;renderScore();showIdle();renderVoices();buildTimeline();updateTransport();
 }
 function changeKey(dir){
-  if(!fits(userShift+dir)){$('status').textContent=dir>0?'Más arriba la melodía se sale de la lira (el La es la lámina más aguda).':'Más abajo la melodía se sale de la lira.';return}
+  if(!fits(userShift+dir)){$('status').textContent=dir>0?'Más arriba la melodía se sale de la lira (el Sol agudo es la lámina más aguda).':'Más abajo la melodía se sale de la lira.';return}
   stop(true);userShift+=dir;try{localStorage.setItem('lira-shift-'+song.id,userShift)}catch(e){}
   $('status').textContent=userShift?`Transportado ${userShift>0?'+':''}${userShift} semitono${Math.abs(userShift)>1?'s':''} respecto al tono original.`:'Tono original.';
   rebuild();
@@ -3846,7 +3847,9 @@ STYLES.marcha.A.bombo[8]=3;STYLES.cumbia.A.bombo[12]=2;STYLES.salsa.A.bombo[28]=
 // Variante de cada sección: A en las partes suaves, B en las fuertes.
 const SECVAR={carol:['A','A','B','A','A', 'A','A','B','A','A'], popurri:['A','B'], navidad:['B','B','B'], wewish:['A','A','B','B','B','B','B','B'], mix:['A','A','B','A','B','B','A','B','B','B']};
 let varMode='auto';
-function styleAt(b){const sec=sectionAt(b);return (arrOn()&&sec.style)||curStyle}
+// Si el profesor elige un ritmo en el menú, ese ritmo manda en TODA la pieza; con «Original» se respetan los cambios de ritmo del arreglo.
+let styleManual=false;
+function styleAt(b){if(styleManual)return curStyle;const sec=sectionAt(b);return (arrOn()&&sec.style)||curStyle}
 function variantAt(b){if(varMode!=='auto')return varMode;const i=song.sections.indexOf(sectionAt(b));return (SECVAR[song.id]||[])[i]||'A'}
 let curStyle='merengue';
 function bandaStep(step,t){const P=STYLES[curStyle].A;for(const k of ['bombo','tenor','redo','congas','bongo','timbal']){const v=P[k][step];if(v&&instOn(k))INST[k].play(t,v)}}
@@ -4090,7 +4093,9 @@ $('tempo').oninput=e=>{
 };
 $('loopLine').onchange=()=>{if($('loopLine').checked&&selLine===null){$('status').textContent='Elija una frase en «Partitura en notas» para repetirla.';$('rutaBox').open=true}};
 function fillVarSel(){const S=STYLES[curStyle],sel=$('varSel');sel.innerHTML=`<option value="auto">Según la sección</option><option value="A">Solo ${S.var.A}</option><option value="B">Solo ${S.var.B}</option>`;sel.value=varMode;sel.disabled=curStyle==='marcha'}
-$('styleSel').onchange=e=>{curStyle=e.target.value;varMode='auto';fillVarSel();$('status').textContent='Ritmo: '+STYLES[curStyle].name+'.'};
+function origStyleName(){const names=[];[song.groove,...song.sections.map(x=>x.style)].forEach(k=>{if(k&&STYLES[k]&&!names.includes(STYLES[k].name))names.push(STYLES[k].name)});return names.join(' → ')}
+$('styleSel').onchange=e=>{const v=e.target.value;if(v==='orig'){styleManual=false;curStyle=song.groove}else{styleManual=true;curStyle=v}
+  varMode='auto';fillVarSel();$('status').textContent=styleManual?'Ritmo: '+STYLES[curStyle].name+' en toda la pieza.':'Ritmo original del arreglo: '+origStyleName()+'.'};
 $('varSel').onchange=e=>{varMode=e.target.value};
 $('keyUp').onclick=()=>changeKey(1);$('keyDown').onclick=()=>changeKey(-1);
 $('keyReset').onclick=()=>{stop(true);userShift=0;try{localStorage.removeItem('lira-shift-'+song.id)}catch(e){};$('status').textContent='Tono original.';rebuild()};
